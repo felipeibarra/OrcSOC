@@ -13,6 +13,18 @@ services:
       - wireless-lab
       - ai-offsec
 
+  nginx:
+    image: nginx:alpine
+    container_name: nginx-proxy
+    ports:
+      - "80:80"
+    volumes:
+      - ./docker/nginx.conf:/etc/nginx/nginx.conf:ro
+    networks:
+      - socnet
+    depends_on:
+      - ops-center
+
   osint-tools:
     build: ./docker/osint-tools
     container_name: osint-tools
