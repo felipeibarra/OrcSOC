@@ -1,10 +1,10 @@
 FROM python:3.12-slim
 
-# Instalar dependencias para IA
-RUN pip install --no-cache-dir torch transformers
+# Instalar dependencias mínimas para IA
+RUN pip install --no-cache-dir transformers torch --index-url https://download.pytorch.org/whl/cpu
 
-# Copiar modelos o scripts
+# Copiar scripts
 COPY . /app
 WORKDIR /app
 
-CMD ["python", "main.py"]
+CMD ["python", "-c", "print('AI Offsec ready')"]
