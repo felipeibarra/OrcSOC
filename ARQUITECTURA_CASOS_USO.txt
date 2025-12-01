@@ -151,6 +151,7 @@ Esta arquitectura facilita operaciones ofensivas éticas, formación y consultor
 - Clona el repositorio: git clone https://github.com/felipeibarra/OrcSOC.git
 - Navega al directorio: cd OrcSOC
 - Construye y lanza: docker-compose up --build
+- Configura DNS local: El script añade automáticamente www.local-orcsoc.cl a /etc/hosts.
 
 4.2 Configuración
 - Edita docker-compose.yml para añadir variables de entorno (ej. API keys).
@@ -158,9 +159,9 @@ Esta arquitectura facilita operaciones ofensivas éticas, formación y consultor
 - Configura red y volúmenes según necesidades.
 
 4.3 Uso Básico
-- Accede al panel: http://localhost:3000
+- Accede al panel: http://www.local-orcsoc.cl o http://localhost:3000
 - Ejecuta comandos: Usa POST requests a /exec/{service} con JSON { "command": "tu_comando" }
-- Ejemplo con curl: curl -X POST http://localhost:3000/exec/osint-tools -H "Content-Type: application/json" -d '{"command": "ls"}'
+- Ejemplo con curl: curl -X POST http://www.local-orcsoc.cl/exec/osint-tools -H "Content-Type: application/json" -d '{"command": "ls"}'
 - Monitorea logs: docker-compose logs
 
 4.4 Mantenimiento
@@ -174,7 +175,7 @@ Esta arquitectura facilita operaciones ofensivas éticas, formación y consultor
 - Implementa autenticación en el panel para producción.
 
 5. DASHBOARD CENTRAL
-El dashboard es la interfaz web principal (http://localhost:3000) para orquestar OrcSOC.
+El dashboard es la interfaz web principal (http://www.local-orcsoc.cl o http://localhost:3000) para orquestar OrcSOC.
 - **Funciones:**
   - Ejecutar comandos en microservicios vía formulario web.
   - Ver resultados en tiempo real con notificaciones (éxito/error).

@@ -28,5 +28,14 @@ fi
 echo "Construyendo y lanzando servicios..."
 docker-compose up --build -d
 
-echo "OrcSOC instalado. Accede a http://localhost:3000"
+# Configurar DNS local
+echo "Configurando DNS local para www.local-orcsoc.cl..."
+if ! grep -q "www.local-orcsoc.cl" /etc/hosts; then
+    echo "127.0.0.1 www.local-orcsoc.cl" | sudo tee -a /etc/hosts > /dev/null
+    echo "DNS local configurado."
+else
+    echo "DNS local ya configurado."
+fi
+
+echo "OrcSOC instalado. Accede a http://www.local-orcsoc.cl o http://localhost:3000"
 echo "Usuario: admin, Password: password"
