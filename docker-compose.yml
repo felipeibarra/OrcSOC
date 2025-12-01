@@ -1,0 +1,59 @@
+
+version: "3.9"
+
+services:
+  ops-center:
+    build: ./docker/ops-center
+    container_name: ops-center
+    ports:
+      - "3000:3000"
+    networks:
+      - socnet
+    depends_on:
+      - osint-tools
+      - web-pentest
+      - wireless-lab
+      - ai-offsec
+
+  osint-tools:
+    build: ./docker/osint-tools
+    container_name: osint-tools
+    networks:
+      - socnet
+
+  web-pentest:
+    build: ./docker/web-pentest
+    container_name: web-pentest
+    networks:
+      - socnet
+
+  wireless-lab:
+    build: ./docker/wireless-lab
+    container_name: wireless-lab
+    network_mode: host
+    cap_add:
+      - NET_ADMIN
+      - NET_RAW
+
+  ai-offsec:
+    build: ./docker/ai-offsec
+    container_name: ai-offsec
+    networks:
+      - socnet
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    networks:
+      - socnet
+
+volumes:
+  ollama_data:
+
+networks:
+  socnet:
+    driver: bridge

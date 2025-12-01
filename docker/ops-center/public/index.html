@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Panel Central OrcSOC</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        form { margin-bottom: 20px; }
+        input, button { padding: 10px; margin: 5px; }
+        #output { background: #f4f4f4; padding: 10px; white-space: pre-wrap; max-height: 300px; overflow-y: auto; }
+        .help { background: #e8f4fd; padding: 15px; border-left: 5px solid #007bff; margin-bottom: 20px; }
+        .service-list { margin-top: 20px; }
+        .service-list ul { list-style-type: none; padding: 0; }
+        .service-list li { background: #f9f9f9; margin: 5px 0; padding: 10px; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <h1>Panel Central OrcSOC</h1>
+    <p>Orquesta comandos en microservicios de ciberseguridad ofensiva y OSINT.</p>
+    <div id="notification" style="display: none; background: #d4edda; color: #155724; padding: 10px; border: 1px solid #c3e6cb; margin-bottom: 10px;"></div>
+    <p>Usuario actual: <span id="currentUser">No autenticado</span> (Rol: <span id="currentRole">N/A</span>) | <a href="#" id="logout">Cerrar Sesión</a> | <a href="#" id="viewLogs">Ver Logs</a></p>
+
+    <div class="help">
+        <h2>Información de Uso</h2>
+        <p>Este dashboard te permite ejecutar comandos en los microservicios de OrcSOC de forma segura y centralizada. Funciones principales:</p>
+        <ul>
+            <li><strong>Ejecutar Comandos:</strong> Envía comandos a servicios como osint-tools, web-pentest, etc.</li>
+            <li><strong>Resultados en Tiempo Real:</strong> Ve la salida de los comandos directamente en la interfaz.</li>
+            <li><strong>Seguridad:</strong> Autenticación requerida; comandos se ejecutan en contenedores aislados.</li>
+            <li><strong>Microservicios Disponibles:</strong> Lista abajo con descripciones.</li>
+        </ul>
+        <p><strong>Advertencia:</strong> Usa solo para fines éticos y legales. Consulta TERMS.md para más detalles.</p>
+    </div>
+
+    <h2>Ejecutar Comando</h2>
+    <form id="commandForm">
+        <label>Servicio: <input type="text" id="service" placeholder="ej. osint-tools" required></label><br>
+        <label>Comando: <input type="text" id="command" placeholder="ej. ls" required></label><br>
+        <button type="submit">Ejecutar</button>
+    </form>
+    <div id="output"></div>
+
+    <div id="logsSection" style="display: none;">
+        <h2>Logs de Comandos</h2>
+        <div id="filters">
+            <label>Filtrar por Usuario: <input type="text" id="filterUser" placeholder="ej. admin"></label>
+            <label>Filtrar por Servicio: <input type="text" id="filterService" placeholder="ej. osint-tools"></label>
+            <label>Filtrar por Fecha (YYYY-MM-DD): <input type="date" id="filterDate"></label>
+            <button id="applyFilters">Aplicar Filtros</button>
+        <button id="exportLogs">Exportar Logs (JSON)</button>
+        <button id="analyzeLogsAI">Analizar Logs con IA</button>
+        <button id="generateAlerts">Generar Alertas Automáticas</button>
+        <button id="integrateExternal">Integrar con API Externa</button>
+        </div>
+        <div id="logsOutput" style="background: #f4f4f4; padding: 10px; white-space: pre-wrap; max-height: 300px; overflow-y: auto;"></div>
+    </div>
+
+    <div class="service-list">
+        <h2>Microservicios Disponibles</h2>
+        <ul>
+            <li><strong>osint-tools:</strong> Herramientas OSINT (ej. scraping, análisis de dominios). Ej: "python script.py --target site.com"</li>
+            <li><strong>web-pentest:</strong> Pentesting web (ej. SQLi, XSS). Ej: "sqlmap -u http://target.com"</li>
+            <li><strong>wireless-lab:</strong> Análisis wireless (ej. kismet). Ej: "kismet -c wlan0" (modo host)</li>
+            <li><strong>ai-offsec:</strong> IA ofensiva (ej. generación de payloads). Ej: "python ai_script.py --scan target"</li>
+        </ul>
+        <p>Para más casos de uso, consulta ARQUITECTURA_CASOS_USO.txt en el repositorio.</p>
+    </div>
+
+    <div class="ai-chat">
+        <h2>Asistente IA (Ollama)</h2>
+        <p>Pregunta sobre mejoras en procesos o sugerencias basadas en logs.</p>
+        <input type="text" id="aiPrompt" placeholder="ej. ¿Cómo mejorar la seguridad en pentesting?" style="width: 70%;">
+        <button id="askAI">Preguntar a IA</button>
+        <div id="aiResponse" style="background: #f4f4f4; padding: 10px; margin-top: 10px; white-space: pre-wrap;"></div>
+    </div>
+
+    <script>
+        // Obtener usuario y rol actual (simplificado)
+        const getCurrentUser = () => 'admin'; // Placeholder
+        const getCurrentRole = () => 'admin'; // Placeholder
+        document.getElementById('currentUser').textContent = getCurrentUser();
+        document.getElementById('currentRole').textContent = getCurrentRole();
+
+        const showNotification = (message, type = 'success') => {
+            const notif = document.getElementById('notification');
+            notif.textContent = message;
+            notif.style.background = type === 'error' ? '#f8d7da' : '#d4edda';
+            notif.style.color = type === 'error' ? '#721c24' : '#155724';
+            notif.style.display = 'block';
+            setTimeout(() => notif.style.display = 'none', 5000);
+        };
+
+        document.getElementById('commandForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const service = document.getElementById('service').value;
+            const command = document.getElementById('command').value;
+            try {
+                const response = await fetch(`/exec/${service}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Basic ' + btoa('admin:password') },
+                    body: JSON.stringify({ command })
+                });
+                const result = await response.text();
+                document.getElementById('output').textContent = result;
+                showNotification('Comando ejecutado exitosamente.', 'success');
+            } catch (error) {
+                showNotification('Error al ejecutar comando.', 'error');
+            }
+        });
+
+        const fetchLogs = async (filters = {}) => {
+            const params = new URLSearchParams(filters);
+            const response = await fetch(`/logs?${params}`, {
+                headers: { 'Authorization': 'Basic ' + btoa('admin:password') }
+            });
+            const logs = await response.json();
+            let logText = 'Logs de Comandos:\n\n';
+            logs.forEach(log => {
+                logText += `${log.timestamp} - Usuario: ${log.user} - Servicio: ${log.service} - Comando: ${log.command}\nResultado: ${log.result}\n\n`;
+            });
+            document.getElementById('logsOutput').textContent = logText;
+            return logs; // Para exportar
+        };
+
+        let currentLogs = [];
+
+        document.getElementById('viewLogs').addEventListener('click', async () => {
+            document.getElementById('logsSection').style.display = 'block';
+            currentLogs = await fetchLogs();
+        });
+
+        document.getElementById('applyFilters').addEventListener('click', async () => {
+            const filters = {
+                user: document.getElementById('filterUser').value,
+                service: document.getElementById('filterService').value,
+                date: document.getElementById('filterDate').value
+            };
+            currentLogs = await fetchLogs(filters);
+        });
+
+        document.getElementById('exportLogs').addEventListener('click', () => {
+            const dataStr = JSON.stringify(currentLogs, null, 2);
+            const dataBlob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(dataBlob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = 'logs.json';
+            link.click();
+            showNotification('Logs exportados exitosamente.');
+        });
+
+        document.getElementById('integrateExternal').addEventListener('click', async () => {
+            // Simulación de integración con API externa (ej. webhook)
+            const externalAPI = 'https://httpbin.org/post'; // Placeholder
+            const data = { logs: currentLogs, source: 'OrcSOC' };
+            try {
+                const response = await fetch(externalAPI, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                const result = await response.json();
+                showNotification('Integración exitosa con API externa.');
+                console.log('Respuesta externa:', result);
+            } catch (error) {
+                showNotification('Error en integración externa.', 'error');
+            }
+        });
+
+        document.getElementById('logout').addEventListener('click', () => {
+            location.reload();
+        });
+    </script>
+</body>
+</html>

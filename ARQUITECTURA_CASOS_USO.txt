@@ -1,0 +1,195 @@
+ARQUITECTURA Y CASOS DE USO - OrcSOC
+
+1. ARQUITECTURA GENERAL
+OrcSOC es una plataforma modular basada en microservicios orquestados por un panel central interactivo. Utiliza Docker para aislamiento y escalabilidad.
+
+- Panel Central (ops-center): Servicio Node.js/Express que expone APIs para orquestar comandos en otros microservicios.
+- Microservicios:
+  - osint-tools: Herramientas OSINT (Python, requests, etc.).
+  - web-pentest: Pentesting web (Kali Linux, sqlmap, nikto).
+  - wireless-lab: Seguridad wireless (Kali Linux, kismet, aircrack-ng).
+  - ai-offsec: IA ofensiva (Python, PyTorch, transformers).
+- Orquestación: Docker Compose con red privada 'socnet'.
+- Escalabilidad: Cada servicio independiente, permite escalado horizontal.
+- Seguridad: Contenedores aislados, variables de entorno para credenciales.
+
+1.1 Arquitectura de Servicios Detallada
+- **ops-center**:
+  - Tecnología: Node.js con Express.
+  - Puerto: 3000 (expuesto).
+  - Funciones: API REST para ejecutar comandos (POST /exec/{service}).
+  - Comunicación: Llama a Docker exec para orquestar otros servicios.
+  - Dependencias: Ninguna externa, solo acceso a Docker socket (opcional para producción).
+
+- **osint-tools**:
+  - Tecnología: Python 3.12 slim.
+  - Puerto: Ninguno (CLI).
+  - Funciones: Scripts OSINT (web scraping, análisis de dominios).
+  - Comunicación: Ejecutado vía panel central.
+  - Persistencia: Volúmenes para datos recolectados.
+
+- **web-pentest**:
+  - Tecnología: Kali Linux rolling.
+  - Puerto: Ninguno (CLI).
+  - Funciones: Escaneos web (SQLi, XSS, CMS exploits).
+  - Comunicación: Comandos orquestados desde panel.
+  - Requisitos: Acceso a red para targets.
+
+- **wireless-lab**:
+  - Tecnología: Kali Linux rolling.
+  - Puerto: Ninguno.
+  - Funciones: Análisis wireless (kismet, aircrack).
+  - Comunicación: Ejecutado localmente.
+  - Requisitos: Modo host, capacidades NET_ADMIN/NET_RAW para hardware WiFi.
+
+- **ai-offsec**:
+  - Tecnología: Python con PyTorch.
+  - Puerto: Ninguno (CLI/script).
+  - Funciones: Análisis IA (generación de payloads, fuerza bruta asistida).
+  - Comunicación: Llamado desde panel.
+  - Requisitos: GPU opcional para modelos pesados.
+
+Red: Todos conectados a 'socnet' (bridge), excepto wireless-lab (host mode).
+Volúmenes: Compartidos para logs, resultados y configuraciones.
+
+Diagrama de Arquitectura (ASCII):
+```
+[Usuario] --> [Panel Central (ops-center:3000)]
+                    |
+                    +--> [osint-tools] (OSINT)
+                    +--> [web-pentest] (Pentesting Web)
+                    +--> [wireless-lab] (Wireless)
+                    +--> [ai-offsec] (IA Ofensiva)
+```
+
+Diagrama de Flujo de Caso de Uso (Ejemplo: Pentesting Web):
+```
+Inicio --> Acceso Panel --> Seleccionar Servicio (web-pentest) --> Enviar Comando (sqlmap) --> Ejecutar en Contenedor --> Recibir Resultado --> Mostrar en Panel --> Fin
+```
+
+Diagrama de Secuencia de Orquestación:
+```
+Usuario -> Panel Central: POST /exec/web-pentest {command: "sqlmap -u target"}
+Panel Central -> Docker: exec web-pentest sqlmap -u target
+Docker -> web-pentest: Ejecutar comando
+web-pentest -> Docker: Resultado
+Docker -> Panel Central: Resultado
+Panel Central -> Usuario: Respuesta JSON
+```
+
+Diagrama de Componentes (Ejemplo: ops-center):
+```
+[Express Server]
+    |
+    +-- [API Routes (/exec)]
+    |   |
+    |   +-- [Command Executor (Docker exec)]
+    |
+    +-- [Middleware (Auth, Logging)]
+```
+
+Diagrama de Red:
+```
+Host Machine
+    |
+    +-- Docker Network 'socnet' (Bridge)
+        |
+        +-- ops-center (3000) <-- Usuario
+        +-- osint-tools
+        +-- web-pentest
+        +-- ai-offsec
+    |
+    +-- wireless-lab (Host Mode) -- Directo a Host Network
+```
+
+2. CASOS DE USO
+
+Caso 1: Investigación OSINT
+- Usuario accede al panel central.
+- Ejecuta comando en osint-tools: "python script.py --target example.com"
+- Resultado: Recopilación de datos públicos, dominios históricos, etc.
+- Beneficio: Automatización de búsquedas masivas sin exposición directa.
+
+Caso 2: Pentesting Web
+- Desde panel, orquesta web-pentest: "sqlmap -u http://target.com"
+- Integración: Correlaciona con CTI si se añade módulo.
+- Flujo: Escaneo -> Análisis -> Reporte automatizado.
+
+Caso 3: Análisis Wireless
+- Ejecuta en wireless-lab: "kismet -c wlan0"
+- Uso: Detección de redes no autorizadas en entorno controlado.
+- Requisito: Modo host para acceso a hardware WiFi.
+
+Caso 4: Automatización con IA
+- Panel lanza en ai-offsec: "python ai_script.py --scan target"
+- Resultado: Análisis automatizado de vulnerabilidades.
+- Ejemplo: Generación de payloads XSS con IA.
+
+Caso 5: SOC Centralizado
+- Equipo accede a panel único para todas las herramientas.
+- Orquestación: Flujos automatizados entre módulos (ej. OSINT -> Pentest -> Reporte).
+- Caso: Simulación de ataque completo en laboratorio.
+
+Caso 6: Formación y Consultoría
+- Instructor orquesta herramientas para demos en tiempo real.
+- Estudiantes acceden vía panel para prácticas guiadas.
+- Beneficio: Entorno seguro y reproducible.
+
+3. BENEFICIOS E INTEGRACIÓN
+- Centralización: Un punto de acceso para múltiples herramientas.
+- Escalabilidad: Añadir módulos sin afectar otros.
+- Seguridad: Aislamiento de contenedores, control de acceso.
+- Integración: APIs permiten automatización avanzada (ej. con SIEM externos).
+- Recomendación: Usar en entornos controlados y éticos únicamente.
+
+Esta arquitectura facilita operaciones ofensivas éticas, formación y consultoría en ciberseguridad.
+
+4. MANUAL DE USO
+
+4.1 Instalación
+- Requisitos: Docker y Docker Compose instalados.
+- Clona el repositorio: git clone https://github.com/felipeibarra/OrcSOC.git
+- Navega al directorio: cd OrcSOC
+- Construye y lanza: docker-compose up --build
+
+4.2 Configuración
+- Edita docker-compose.yml para añadir variables de entorno (ej. API keys).
+- Personaliza Dockerfiles en ./docker/ para instalar herramientas específicas.
+- Configura red y volúmenes según necesidades.
+
+4.3 Uso Básico
+- Accede al panel: http://localhost:3000
+- Ejecuta comandos: Usa POST requests a /exec/{service} con JSON { "command": "tu_comando" }
+- Ejemplo con curl: curl -X POST http://localhost:3000/exec/osint-tools -H "Content-Type: application/json" -d '{"command": "ls"}'
+- Monitorea logs: docker-compose logs
+
+4.4 Mantenimiento
+- Actualiza contenedores: docker-compose pull && docker-compose up -d
+- Detén servicios: docker-compose down
+- Limpia: docker system prune
+
+4.5 Seguridad
+- Usa en entornos controlados.
+- No expongas puertos innecesarios.
+- Implementa autenticación en el panel para producción.
+
+5. DASHBOARD CENTRAL
+El dashboard es la interfaz web principal (http://localhost:3000) para orquestar OrcSOC.
+- **Funciones:**
+  - Ejecutar comandos en microservicios vía formulario web.
+  - Ver resultados en tiempo real con notificaciones (éxito/error).
+  - Acceder a logs históricos con filtros (usuario, servicio, fecha) y exportación a JSON.
+  - Gestión de usuarios con roles: Admin (ver todos los logs), User (solo sus logs).
+  - Chat con Asistente IA (Ollama): Propone mejoras en procesos en tiempo real.
+  - Análisis automático de logs con IA: Botón para analizar logs y obtener insights.
+  - Alertas automáticas: Genera alertas basadas en logs para detectar anomalías.
+  - Integración con herramientas externas: Envía datos a APIs (ej. webhooks).
+  - Información integrada de uso y servicios disponibles.
+  - Cerrar sesión y navegación.
+- **Capacidades:**
+  - Orquestación segura: Comandos en contenedores aislados.
+  - Persistencia de logs: Almacenados en archivo JSON con filtros y exportación.
+  - IA integrada: Usa Ollama para sugerencias inteligentes, análisis y alertas.
+  - Ayuda en línea: Descripciones de servicios y ejemplos.
+  - Escalabilidad: Soporta múltiples usuarios simultáneos con roles.
+- **Ejemplo de Uso:** Ejecuta comandos, filtra logs, genera alertas automáticas con IA, integra con API externa para compartir datos.
