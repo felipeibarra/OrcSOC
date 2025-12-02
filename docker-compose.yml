@@ -5,6 +5,8 @@ services:
     container_name: ops-center
     ports:
       - "3000:3000"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
     networks:
       - socnet
     depends_on:
@@ -17,7 +19,7 @@ services:
     image: nginx:alpine
     container_name: nginx-proxy
     ports:
-      - "80:80"
+      - "8081:80"
     volumes:
       - ./docker/nginx.conf:/etc/nginx/nginx.conf:ro
     networks:
@@ -28,18 +30,21 @@ services:
   osint-tools:
     build: ./docker/osint-tools
     container_name: osint-tools
+    command: tail -f /dev/null
     networks:
       - socnet
 
   web-pentest:
     build: ./docker/web-pentest
     container_name: web-pentest
+    command: tail -f /dev/null
     networks:
       - socnet
 
   wireless-lab:
     build: ./docker/wireless-lab
     container_name: wireless-lab
+    command: tail -f /dev/null
     network_mode: host
     cap_add:
       - NET_ADMIN
@@ -48,6 +53,7 @@ services:
   ai-offsec:
     build: ./docker/ai-offsec
     container_name: ai-offsec
+    command: tail -f /dev/null
     networks:
       - socnet
 
@@ -55,14 +61,26 @@ services:
     image: ollama/ollama:latest
     container_name: ollama
     ports:
-      - "11434:11434"
+      - "11435:11434"
     volumes:
       - ollama_data:/root/.ollama
     networks:
       - socnet
 
+  redis:
+    image: redis:7-alpine
+    container_name: orcsoc-redis
+    ports:
+      - "6379:6379"
+    networks:
+      - socnet
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+
 volumes:
   ollama_data:
+  redis_data:
 
 networks:
   socnet:

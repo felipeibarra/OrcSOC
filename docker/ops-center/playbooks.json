@@ -1,0 +1,81 @@
+{
+  "playbooks": [
+    {
+      "id": "domain-recon",
+      "name": "Domain Reconnaissance",
+      "description": "Comprehensive domain reconnaissance using Subfinder, Amass, and Nmap",
+      "steps": [
+        {
+          "service": "osint-tools",
+          "command": "python tools/subfinder_wrapper.py --domain {{target}}",
+          "description": "Enumerate subdomains with Subfinder"
+        },
+        {
+          "service": "osint-tools",
+          "command": "python tools/amass_wrapper.py --domain {{target}}",
+          "description": "Cross-reference subdomains with Amass"
+        },
+        {
+          "service": "web-pentest",
+          "command": "nmap -sV -p 80,443,8080,8443 {{target}}",
+          "description": "Scan common web ports"
+        }
+      ],
+      "ai_analysis": true
+    },
+    {
+      "id": "email-investigation",
+      "name": "Email Investigation",
+      "description": "Investigate email exposure and data breaches",
+      "steps": [
+        {
+          "service": "osint-tools",
+          "command": "python tools/harvester_wrapper.py --domain {{target}} --sources google,bing,duckduckgo",
+          "description": "Harvest emails from public sources"
+        },
+        {
+          "service": "osint-tools",
+          "command": "whois {{target}}",
+          "description": "Get domain registration info"
+        }
+      ],
+      "ai_analysis": true
+    },
+    {
+      "id": "web-vuln-scan",
+      "name": "Web Vulnerability Scan",
+      "description": "Scan website for common vulnerabilities",
+      "steps": [
+        {
+          "service": "web-pentest",
+          "command": "nmap -sV -p 1-1000 {{target}}",
+          "description": "Port scan and service detection"
+        },
+        {
+          "service": "web-pentest",
+          "command": "nikto -h http://{{target}}",
+          "description": "Web server vulnerability scan"
+        },
+        {
+          "service": "web-pentest",
+          "command": "wpscan --url http://{{target}} --enumerate",
+          "description": "WordPress security scan (if applicable)"
+        }
+      ],
+      "ai_analysis": true
+    },
+    {
+      "id": "full-osint",
+      "name": "Full OSINT Enrichment",
+      "description": "Complete OSINT analysis using enrichment orchestrator",
+      "steps": [
+        {
+          "service": "osint-tools",
+          "command": "python tools/enrich.py --target {{target}} --type domain",
+          "description": "Run all OSINT tools and aggregate results"
+        }
+      ],
+      "ai_analysis": true
+    }
+  ]
+}

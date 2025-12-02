@@ -2,174 +2,617 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Panel Central OrcSOC</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OrcSOC - Security Operations Center</title>
+    <script src="/socket.io/socket.io.js"></script>
     <style>
-        body { font-family: Arial, sans-serif; margin: 20px; }
-        form { margin-bottom: 20px; }
-        input, button { padding: 10px; margin: 5px; }
-        #output { background: #f4f4f4; padding: 10px; white-space: pre-wrap; max-height: 300px; overflow-y: auto; }
-        .help { background: #e8f4fd; padding: 15px; border-left: 5px solid #007bff; margin-bottom: 20px; }
-        .service-list { margin-top: 20px; }
-        .service-list ul { list-style-type: none; padding: 0; }
-        .service-list li { background: #f9f9f9; margin: 5px 0; padding: 10px; border-radius: 5px; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        /* Input Central */
+        .main-input-section {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .main-input-section h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .input-group input {
+            flex: 1;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        /* Action Cards */
+        .actions-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .action-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            text-align: center;
+        }
+
+        .action-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+        }
+
+        .action-card .icon {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+
+        .action-card .title {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .action-card .description {
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+
+        /* Results Section */
+        .results-section {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            margin-top: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            display: none;
+        }
+
+        .results-section.active {
+            display: block;
+        }
+
+        .results-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .results-header h3 {
+            color: #667eea;
+            font-size: 1.3em;
+        }
+
+        .status-badge {
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: bold;
+        }
+
+        .status-badge.running {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status-badge.success {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-badge.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .result-output {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            max-height: 400px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            border: 1px solid #e0e0e0;
+        }
+
+        .ai-analysis {
+            background: linear-gradient(135deg, #e8f4fd 0%, #e0e7ff 100%);
+            border-left: 4px solid #667eea;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .ai-analysis h4 {
+            color: #667eea;
+            margin-bottom: 15px;
+        }
+
+        .ai-analysis-content {
+            line-height: 1.6;
+            color: #333;
+        }
+
+        .btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+
+        /* Services Status */
+        .services-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .service-card {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .service-card .service-name {
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .service-card .service-status {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 0.85em;
+            font-weight: bold;
+        }
+
+        .service-card .service-status.up {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .service-card .service-status.down {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 20px;
+            border-radius: 10px;
+            color: white;
+            font-weight: bold;
+            z-index: 1000;
+            animation: slideIn 0.3s;
+            display: none;
+        }
+
+        .notification.show {
+            display: block;
+        }
+
+        .notification.success {
+            background: #28a745;
+        }
+
+        .notification.error {
+            background: #dc3545;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+            }
+            to {
+                transform: translateX(0);
+            }
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .tab {
+            padding: 10px 20px;
+            background: #f8f9fa;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+
+        .tab.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
     </style>
 </head>
 <body>
-    <h1>Panel Central OrcSOC</h1>
-    <p>Orquesta comandos en microservicios de ciberseguridad ofensiva y OSINT.</p>
-    <div id="notification" style="display: none; background: #d4edda; color: #155724; padding: 10px; border: 1px solid #c3e6cb; margin-bottom: 10px;"></div>
-    <p>Usuario actual: <span id="currentUser">No autenticado</span> (Rol: <span id="currentRole">N/A</span>) | <a href="#" id="logout">Cerrar Sesión</a> | <a href="#" id="viewLogs">Ver Logs</a></p>
-
-    <div class="help">
-        <h2>Información de Uso</h2>
-        <p>Este dashboard te permite ejecutar comandos en los microservicios de OrcSOC de forma segura y centralizada. Funciones principales:</p>
-        <ul>
-            <li><strong>Ejecutar Comandos:</strong> Envía comandos a servicios como osint-tools, web-pentest, etc.</li>
-            <li><strong>Resultados en Tiempo Real:</strong> Ve la salida de los comandos directamente en la interfaz.</li>
-            <li><strong>Seguridad:</strong> Autenticación requerida; comandos se ejecutan en contenedores aislados.</li>
-            <li><strong>Microservicios Disponibles:</strong> Lista abajo con descripciones.</li>
-        </ul>
-        <p><strong>Advertencia:</strong> Usa solo para fines éticos y legales. Consulta TERMS.md para más detalles.</p>
-    </div>
-
-    <h2>Ejecutar Comando</h2>
-    <form id="commandForm">
-        <label>Servicio: <input type="text" id="service" placeholder="ej. osint-tools" required></label><br>
-        <label>Comando: <input type="text" id="command" placeholder="ej. ls" required></label><br>
-        <button type="submit">Ejecutar</button>
-    </form>
-    <div id="output"></div>
-
-    <div id="logsSection" style="display: none;">
-        <h2>Logs de Comandos</h2>
-        <div id="filters">
-            <label>Filtrar por Usuario: <input type="text" id="filterUser" placeholder="ej. admin"></label>
-            <label>Filtrar por Servicio: <input type="text" id="filterService" placeholder="ej. osint-tools"></label>
-            <label>Filtrar por Fecha (YYYY-MM-DD): <input type="date" id="filterDate"></label>
-            <button id="applyFilters">Aplicar Filtros</button>
-        <button id="exportLogs">Exportar Logs (JSON)</button>
-        <button id="analyzeLogsAI">Analizar Logs con IA</button>
-        <button id="generateAlerts">Generar Alertas Automáticas</button>
-        <button id="integrateExternal">Integrar con API Externa</button>
+    <div class="container">
+        <div class="header">
+            <h1>🛡️ OrcSOC</h1>
+            <p>Security Operations Center - Plataforma Integral de Ciberseguridad</p>
         </div>
-        <div id="logsOutput" style="background: #f4f4f4; padding: 10px; white-space: pre-wrap; max-height: 300px; overflow-y: auto;"></div>
+
+        <!-- Services Status -->
+        <div class="services-grid" id="servicesGrid">
+            <div class="service-card">
+                <div class="service-name">OSINT Tools</div>
+                <span class="service-status up">Cargando...</span>
+            </div>
+        </div>
+
+        <!-- Main Input Section -->
+        <div class="main-input-section">
+            <h2>🎯 Analizar Objetivo</h2>
+            <div class="input-group">
+                <input type="text" id="targetInput" placeholder="Ingresa dominio, URL o IP (ej: example.com, https://example.com, 192.168.1.1)">
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="actions-grid">
+                <div class="action-card" onclick="runAction('recon-basico')">
+                    <div class="icon">🔍</div>
+                    <div class="title">Recon Básico</div>
+                    <div class="description">Subdominios rápidos</div>
+                </div>
+
+                <div class="action-card" onclick="runAction('osint-completo')">
+                    <div class="icon">🕵️</div>
+                    <div class="title">OSINT Completo</div>
+                    <div class="description">Análisis profundo</div>
+                </div>
+
+                <div class="action-card" onclick="runAction('escaneo-nmap')">
+                    <div class="icon">🔬</div>
+                    <div class="title">Escaneo Puertos</div>
+                    <div class="description">Nmap rápido</div>
+                </div>
+
+                <div class="action-card" onclick="runAction('vuln-web')">
+                    <div class="icon">🛡️</div>
+                    <div class="title">Vulnerabilidades</div>
+                    <div class="description">Nikto scan</div>
+                </div>
+
+                <div class="action-card" onclick="runAction('harvester-emails')">
+                    <div class="icon">📧</div>
+                    <div class="title">Buscar Emails</div>
+                    <div class="description">theHarvester</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Section -->
+        <div class="results-section" id="resultsSection">
+            <div class="results-header">
+                <h3>📊 Resultados</h3>
+                <span class="status-badge running" id="statusBadge">Ejecutando...</span>
+            </div>
+
+            <div class="tabs">
+                <button class="tab active" onclick="switchTab('output')">Output</button>
+                <button class="tab" onclick="switchTab('analysis')">Análisis IA</button>
+            </div>
+
+            <div class="tab-content active" id="outputTab">
+                <div class="result-output" id="resultOutput">
+                    <div class="loading"></div> Ejecutando análisis...
+                </div>
+                <button class="btn btn-primary" onclick="analyzeWithAI()" style="margin-top: 20px;">
+                    🤖 Analizar con IA
+                </button>
+            </div>
+
+            <div class="tab-content" id="analysisTab">
+                <div class="ai-analysis">
+                    <h4>🤖 Análisis de Inteligencia Artificial</h4>
+                    <div class="ai-analysis-content" id="aiAnalysisContent">
+                        Click en "Analizar con IA" para obtener un análisis inteligente de los resultados.
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <div class="service-list">
-        <h2>Microservicios Disponibles</h2>
-        <ul>
-            <li><strong>osint-tools:</strong> Herramientas OSINT (ej. scraping, análisis de dominios). Ej: "python script.py --target site.com"</li>
-            <li><strong>web-pentest:</strong> Pentesting web (ej. SQLi, XSS). Ej: "sqlmap -u http://target.com"</li>
-            <li><strong>wireless-lab:</strong> Análisis wireless (ej. kismet). Ej: "kismet -c wlan0" (modo host)</li>
-            <li><strong>ai-offsec:</strong> IA ofensiva (ej. generación de payloads). Ej: "python ai_script.py --scan target"</li>
-        </ul>
-        <p>Para más casos de uso, consulta ARQUITECTURA_CASOS_USO.txt en el repositorio.</p>
-    </div>
-
-    <div class="ai-chat">
-        <h2>Asistente IA (Ollama)</h2>
-        <p>Pregunta sobre mejoras en procesos o sugerencias basadas en logs.</p>
-        <input type="text" id="aiPrompt" placeholder="ej. ¿Cómo mejorar la seguridad en pentesting?" style="width: 70%;">
-        <button id="askAI">Preguntar a IA</button>
-        <div id="aiResponse" style="background: #f4f4f4; padding: 10px; margin-top: 10px; white-space: pre-wrap;"></div>
-    </div>
+    <div class="notification" id="notification"></div>
 
     <script>
-        // Obtener usuario y rol actual (simplificado)
-        const getCurrentUser = () => 'admin'; // Placeholder
-        const getCurrentRole = () => 'admin'; // Placeholder
-        document.getElementById('currentUser').textContent = getCurrentUser();
-        document.getElementById('currentRole').textContent = getCurrentRole();
+        const socket = io();
+        let currentJobId = null;
+        let currentOutput = '';
+        let currentTool = '';
 
-        const showNotification = (message, type = 'success') => {
-            const notif = document.getElementById('notification');
-            notif.textContent = message;
-            notif.style.background = type === 'error' ? '#f8d7da' : '#d4edda';
-            notif.style.color = type === 'error' ? '#721c24' : '#155724';
-            notif.style.display = 'block';
-            setTimeout(() => notif.style.display = 'none', 5000);
-        };
+        const AUTH_HEADER = 'Basic ' + btoa('admin:password');
 
-        document.getElementById('commandForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const service = document.getElementById('service').value;
-            const command = document.getElementById('command').value;
+        // Load services status
+        async function loadServices() {
             try {
-                const response = await fetch(`/exec/${service}`, {
+                const response = await fetch('/services/status', {
+                    headers: { 'Authorization': AUTH_HEADER }
+                });
+                const services = await response.json();
+                
+                const grid = document.getElementById('servicesGrid');
+                grid.innerHTML = services.map(s => `
+                    <div class="service-card">
+                        <div class="service-name">${s.service}</div>
+                        <span class="service-status ${s.status}">${s.status.toUpperCase()}</span>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Error loading services:', error);
+            }
+        }
+
+        // Run action
+        async function runAction(actionId) {
+            const target = document.getElementById('targetInput').value.trim();
+            
+            if (!target) {
+                showNotification('Por favor ingresa un objetivo válido', 'error');
+                return;
+            }
+
+            // Get template
+            const response = await fetch('/templates', {
+                headers: { 'Authorization': AUTH_HEADER }
+            });
+            const templates = await response.json();
+            const template = templates[actionId];
+
+            if (!template) {
+                showNotification('Template no encontrado', 'error');
+                return;
+            }
+
+            // Prepare command
+            const command = template.command.replace('{{target}}', target);
+            currentTool = actionId;
+
+            // Show results section
+            document.getElementById('resultsSection').classList.add('active');
+            document.getElementById('statusBadge').className = 'status-badge running';
+            document.getElementById('statusBadge').textContent = 'Ejecutando...';
+            document.getElementById('resultOutput').innerHTML = '<div class="loading"></div> Ejecutando ' + template.name + '...';
+            document.getElementById('aiAnalysisContent').textContent = 'Esperando resultados...';
+
+            // Execute command
+            try {
+                const execResponse = await fetch(`/exec/${template.service}`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Basic ' + btoa('admin:password') },
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': AUTH_HEADER
+                    },
                     body: JSON.stringify({ command })
                 });
-                const result = await response.text();
-                document.getElementById('output').textContent = result;
-                showNotification('Comando ejecutado exitosamente.', 'success');
+
+                const result = await execResponse.json();
+                
+                if (result.error) {
+                    showNotification('Error: ' + result.error, 'error');
+                    document.getElementById('statusBadge').className = 'status-badge error';
+                    document.getElementById('statusBadge').textContent = 'Error';
+                    document.getElementById('resultOutput').textContent = 'Error: ' + result.error;
+                } else {
+                    currentJobId = result.jobId;
+                    showNotification('Análisis iniciado correctamente', 'success');
+                }
             } catch (error) {
-                showNotification('Error al ejecutar comando.', 'error');
+                showNotification('Error al ejecutar comando', 'error');
+                document.getElementById('statusBadge').className = 'status-badge error';
+                document.getElementById('statusBadge').textContent = 'Error';
+            }
+        }
+
+        // WebSocket events
+        socket.on('connect', () => {
+            console.log('WebSocket conectado');
+            socket.emit('subscribe:jobs');
+        });
+
+        socket.on('job:start', (data) => {
+            if (data.jobId == currentJobId) {
+                document.getElementById('resultOutput').innerHTML = '<div class="loading"></div> Procesando...';
             }
         });
 
-        const fetchLogs = async (filters = {}) => {
-            const params = new URLSearchParams(filters);
-            const response = await fetch(`/logs?${params}`, {
-                headers: { 'Authorization': 'Basic ' + btoa('admin:password') }
-            });
-            const logs = await response.json();
-            let logText = 'Logs de Comandos:\n\n';
-            logs.forEach(log => {
-                logText += `${log.timestamp} - Usuario: ${log.user} - Servicio: ${log.service} - Comando: ${log.command}\nResultado: ${log.result}\n\n`;
-            });
-            document.getElementById('logsOutput').textContent = logText;
-            return logs; // Para exportar
-        };
-
-        let currentLogs = [];
-
-        document.getElementById('viewLogs').addEventListener('click', async () => {
-            document.getElementById('logsSection').style.display = 'block';
-            currentLogs = await fetchLogs();
+        socket.on('job:complete', (data) => {
+            if (data.jobId == currentJobId) {
+                currentOutput = data.result;
+                document.getElementById('statusBadge').className = 'status-badge success';
+                document.getElementById('statusBadge').textContent = `Completado (${data.duration}ms)`;
+                document.getElementById('resultOutput').textContent = data.result;
+                showNotification('Análisis completado', 'success');
+            }
         });
 
-        document.getElementById('applyFilters').addEventListener('click', async () => {
-            const filters = {
-                user: document.getElementById('filterUser').value,
-                service: document.getElementById('filterService').value,
-                date: document.getElementById('filterDate').value
-            };
-            currentLogs = await fetchLogs(filters);
+        socket.on('job:error', (data) => {
+            if (data.jobId == currentJobId) {
+                document.getElementById('statusBadge').className = 'status-badge error';
+                document.getElementById('statusBadge').textContent = 'Error';
+                document.getElementById('resultOutput').textContent = 'Error: ' + data.error;
+                showNotification('Error en análisis', 'error');
+            }
         });
 
-        document.getElementById('exportLogs').addEventListener('click', () => {
-            const dataStr = JSON.stringify(currentLogs, null, 2);
-            const dataBlob = new Blob([dataStr], { type: 'application/json' });
-            const url = URL.createObjectURL(dataBlob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = 'logs.json';
-            link.click();
-            showNotification('Logs exportados exitosamente.');
-        });
+        // Analyze with AI
+        async function analyzeWithAI() {
+            if (!currentOutput) {
+                showNotification('No hay resultados para analizar', 'error');
+                return;
+            }
 
-        document.getElementById('integrateExternal').addEventListener('click', async () => {
-            // Simulación de integración con API externa (ej. webhook)
-            const externalAPI = 'https://httpbin.org/post'; // Placeholder
-            const data = { logs: currentLogs, source: 'OrcSOC' };
+            document.getElementById('aiAnalysisContent').innerHTML = '<div class="loading"></div> Analizando con IA...';
+            switchTab('analysis');
+
             try {
-                const response = await fetch(externalAPI, {
+                const response = await fetch('/analyze', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(data)
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': AUTH_HEADER
+                    },
+                    body: JSON.stringify({
+                        tool: currentTool,
+                        output: currentOutput,
+                        target: document.getElementById('targetInput').value
+                    })
                 });
-                const result = await response.json();
-                showNotification('Integración exitosa con API externa.');
-                console.log('Respuesta externa:', result);
-            } catch (error) {
-                showNotification('Error en integración externa.', 'error');
-            }
-        });
 
-        document.getElementById('logout').addEventListener('click', () => {
-            location.reload();
-        });
+                const result = await response.json();
+                
+                if (result.error) {
+                    document.getElementById('aiAnalysisContent').textContent = 'Error: ' + result.error;
+                    showNotification('Error en análisis IA', 'error');
+                } else {
+                    document.getElementById('aiAnalysisContent').textContent = result.analysis;
+                    showNotification('Análisis IA completado', 'success');
+                }
+            } catch (error) {
+                document.getElementById('aiAnalysisContent').textContent = 'Error al comunicarse con IA';
+                showNotification('Error en análisis IA', 'error');
+            }
+        }
+
+        // Switch tab
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            
+            if (tabName === 'output') {
+                document.querySelectorAll('.tab')[0].classList.add('active');
+                document.getElementById('outputTab').classList.add('active');
+            } else {
+                document.querySelectorAll('.tab')[1].classList.add('active');
+                document.getElementById('analysisTab').classList.add('active');
+            }
+        }
+
+        // Show notification
+        function showNotification(message, type) {
+            const notif = document.getElementById('notification');
+            notif.textContent = message;
+            notif.className = `notification ${type} show`;
+            setTimeout(() => notif.classList.remove('show'), 3000);
+        }
+
+        // Initialize
+        loadServices();
+        setInterval(loadServices, 30000); // Refresh every 30s
     </script>
 </body>
 </html>

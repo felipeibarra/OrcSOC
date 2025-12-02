@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Panel Central OrcSOC</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        form { margin-bottom: 20px; }
+        input, button { padding: 10px; margin: 5px; }
+        #output { background: #f4f4f4; padding: 10px; white-space: pre-wrap; max-height: 300px; overflow-y: auto; }
+        .help { background: #e8f4fd; padding: 15px; border-left: 5px solid #007bff; margin-bottom: 20px; }
+        .service-list { margin-top: 20px; }
+        .service-list ul { list-style-type: none; padding: 0; }
+        .service-list li { background: #f9f9f9; margin: 5px 0; padding: 10px; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <h1>Panel Central OrcSOC</h1>
+    <p>Orquesta comandos en microservicios de ciberseguridad ofensiva y OSINT.</p>
+    <div id="notification" style="display: none; background: #d4edda; color: #155724; padding: 10px; border: 1px solid #c3e6cb; margin-bottom: 10px;"></div>
+    <p>Usuario actual: <span id="currentUser">No autenticado</span> (Rol: <span id="currentRole">N/A</span>) | <a href="#" id="logout">Cerrar Sesión</a> | <a href="#" id="viewLogs">Ver Logs</a></p>
+
+    <div class="help">
+        <h2>Información de Uso</h2>
+        <p>Este dashboard te permite ejecutar comandos en los microservicios de OrcSOC de forma segura y centralizada. Funciones principales:</p>
+        <ul>
+            <li><strong>Ejecutar Comandos:</strong> Envía comandos a servicios como osint-tools, web-pentest, etc.</li>
+            <li><strong>Resultados en Tiempo Real:</strong> Ve la salida de los comandos directamente en la interfaz.</li>
+            <li><strong>Seguridad:</strong> Autenticación requerida; comandos se ejecutan en contenedores aislados.</li>
+            <li><strong>Microservicios Disponibles:</strong> Lista abajo con descripciones.</li>
+        </ul>
+        <p><strong>Advertencia:</strong> Usa solo para fines éticos y legales. Consulta TERMS.md para más detalles.</p>
+    </div>
+
+    <h2>Ejecutar Comando</h2>
+    <form id="commandForm">
+        <label>Servicio: <input type="text" id="service" placeholder="ej. osint-tools" required></label><br>
+        <label>Comando: <input type="text" id="command" placeholder="ej. python tools/subfinder_wrapper.py --domain example.com" required></label><br>
+        <button type="submit">Ejecutar</button>
+    </form>
+    <div id="output"></div>
+    <div id="aiAnalysisSection" style="display: none; margin-top: 20px;">
+        <button id="analyzeBtn" style="background: #007bff; color: white; padding: 10px 20px; border: none; cursor: pointer;">Analizar con IA</button>
+        <div id="aiAnalysisOutput" style="background: #e8f4fd; padding: 15px; margin-top: 10px; border-left: 5px solid #007bff; white-space: pre-wrap;"></div>
+    </div>
+
+    <div id="logsSection" style="display: none;">
+        <h2>Logs de Comandos</h2>
+        <div id="filters">
+            <label>Filtrar por Usuario: <input type="text" id="filterUser" placeholder="ej. admin"></label>
+            <label>Filtrar por Servicio: <input type="text" id="filterService" placeholder="ej. osint-tools"></label>
+            <label>Filtrar por Fecha (YYYY-MM-DD): <input type="date" id="filterDate"></label>
+            <button id="applyFilters">Aplicar Filtros</button>
+        <button id="exportLogs">Exportar Logs (JSON)</button>
+        <button id="analyzeLogsAI">Analizar Logs con IA</button>
+        <button id="generateAlerts">Generar Alertas Automáticas</button>
+        <button id="integrateExternal">Integrar con API Externa</button>
+        </div>
+        <div id="logsOutput" style="background: #f4f4f4; padding: 10px; white-space: pre-wrap; max-height: 300px; overflow-y: auto;"></div>
+    </div>
+
+    <div class="service-list">
+        <h2>Microservicios y Herramientas Disponibles</h2>
+        
+        <h3>OSINT Tools</h3>
+        <ul>
+            <li><strong>theHarvester:</strong> "python tools/harvester_wrapper.py --domain example.com"</li>
+            <li><strong>Subfinder:</strong> "python tools/subfinder_wrapper.py --domain example.com"</li>
+            <li><strong>Amass:</strong> "python tools/amass_wrapper.py --domain example.com"</li>
+            <li><strong>Whois:</strong> "whois example.com"</li>
+            <li><strong>Nslookup:</strong> "nslookup example.com"</li>
+        </ul>
+        
+        <h3>Web Pentesting Tools</h3>
+        <ul>
+            <li><strong>Nmap:</strong> "nmap -sV -p 80,443 target.com"</li>
+            <li><strong>SQLmap:</strong> "sqlmap -u http://target.com/page?id=1 --batch"</li>
+            <li><strong>Nikto:</strong> "nikto -h http://target.com"</li>
+            <li><strong>WPScan:</strong> "wpscan --url http://target.com"</li>
+            <li><strong>Gobuster:</strong> "gobuster dir -u http://target.com -w /usr/share/wordlists/dirb/common.txt"</li>
+        </ul>
+        
+        <h3>Wireless Lab</h3>
+        <ul>
+            <li><strong>Kismet:</strong> "kismet -c wlan0" (modo host)</li>
+            <li><strong>Aircrack-ng:</strong> Herramientas de análisis WiFi</li>
+        </ul>
+        
+        <h3>AI Offensive</h3>
+        <ul>
+            <li><strong>AI-Offsec:</strong> Herramientas de IA ofensiva</li>
+        </ul>
+        
+        <p><strong>Tip:</strong> Después de ejecutar un comando, usa el botón "Analizar con IA" para obtener un análisis inteligente de los resultados.</p>
+    </div>
+
+    <div class="playbooks-section">
+        <h2>Playbooks Automatizados</h2>
+        <p>Ejecuta flujos de trabajo automatizados para análisis de seguridad completos.</p>
+        <div id="playbooksList" style="margin: 20px 0;"></div>
+        <div id="playbookExecution" style="display: none; background: #f9f9f9; padding: 20px; border-radius: 5px;">
+            <h3 id="playbookName"></h3>
+            <p id="playbookDescription"></p>
+            <label>Target: <input type="text" id="playbookTarget" placeholder="example.com o 192.168.1.1" style="width: 300px; padding: 5px;"></label>
+            <button id="runPlaybookBtn" style="background: #28a745; color: white; padding: 10px 20px; margin-left: 10px; border: none; cursor: pointer;">Ejecutar Playbook</button>
+            <div id="playbookResults" style="margin-top: 20px;"></div>
+        </div>
+    </div>
+
+    <div class="ai-chat">
+        <h2>Asistente IA (Ollama)</h2>
+        <p>Pregunta sobre mejoras en procesos o sugerencias basadas en logs.</p>
+        <input type="text" id="aiPrompt" placeholder="ej. ¿Cómo mejorar la seguridad en pentesting?" style="width: 70%;">
+        <button id="askAI">Preguntar a IA</button>
+        <div id="aiResponse" style="background: #f4f4f4; padding: 10px; margin-top: 10px; white-space: pre-wrap;"></div>
+    </div>
+
+    <script>
+        // Obtener usuario y rol actual (simplificado)
+        const getCurrentUser = () => 'admin'; // Placeholder
+        const getCurrentRole = () => 'admin'; // Placeholder
+        document.getElementById('currentUser').textContent = getCurrentUser();
+        document.getElementById('currentRole').textContent = getCurrentRole();
+
+        const showNotification = (message, type = 'success') => {
+            const notif = document.getElementById('notification');
+            notif.textContent = message;
+            notif.style.background = type === 'error' ? '#f8d7da' : '#d4edda';
+            notif.style.color = type === 'error' ? '#721c24' : '#155724';
+            notif.style.display = 'block';
+            setTimeout(() => notif.style.display = 'none', 5000);
+        };
+
+        let lastCommandOutput = '';
+        let lastService = '';
+        let lastCommand = '';
+
+        document.getElementById('commandForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const service = document.getElementById('service').value;
+            const command = document.getElementById('command').value;
+            try {
+                const response = await fetch(`/exec/${service}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Basic ' + btoa('admin:password') },
+                    body: JSON.stringify({ command })
+                });
+                const result = await response.text();
+                document.getElementById('output').textContent = result;
+                
+                // Guardar para análisis IA
+                lastCommandOutput = result;
+                lastService = service;
+                lastCommand = command;
+                
+                // Mostrar botón de análisis IA
+                document.getElementById('aiAnalysisSection').style.display = 'block';
+                document.getElementById('aiAnalysisOutput').textContent = '';
+                
+                showNotification('Comando ejecutado exitosamente.', 'success');
+            } catch (error) {
+                showNotification('Error al ejecutar comando.', 'error');
+            }
+        });
+
+        document.getElementById('analyzeBtn').addEventListener('click', async () => {
+            if (!lastCommandOutput) {
+                showNotification('No hay resultados para analizar', 'error');
+                return;
+            }
+            
+            document.getElementById('aiAnalysisOutput').textContent = 'Analizando con IA...';
+            document.getElementById('analyzeBtn').disabled = true;
+            
+            try {
+                // Detectar tipo de herramienta del comando
+                let tool = 'default';
+                if (lastCommand.includes('nmap')) tool = 'nmap';
+                else if (lastCommand.includes('subfinder')) tool = 'subfinder';
+                else if (lastCommand.includes('harvester')) tool = 'harvester';
+                else if (lastCommand.includes('sqlmap')) tool = 'sqlmap';
+                else if (lastCommand.includes('amass')) tool = 'subfinder'; // Similar analysis
+                
+                const response = await fetch('/analyze', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json', 
+                        'Authorization': 'Basic ' + btoa('admin:password') 
+                    },
+                    body: JSON.stringify({ 
+                        tool, 
+                        output: lastCommandOutput, 
+                        target: 'Target from command' 
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.error) {
+                    document.getElementById('aiAnalysisOutput').textContent = 'Error: ' + result.error;
+                    showNotification('Error en análisis IA', 'error');
+                } else {
+                    document.getElementById('aiAnalysisOutput').textContent = 
+                        '=== ANÁLISIS IA ===\n\n' + result.analysis;
+                    showNotification('Análisis IA completado', 'success');
+                }
+            } catch (error) {
+                document.getElementById('aiAnalysisOutput').textContent = 'Error: ' + error.message;
+                showNotification('Error en análisis IA', 'error');
+            } finally {
+                document.getElementById('analyzeBtn').disabled = false;
+            }
+        });
+
+        const fetchLogs = async (filters = {}) => {
+            const params = new URLSearchParams(filters);
+            const response = await fetch(`/logs?${params}`, {
+                headers: { 'Authorization': 'Basic ' + btoa('admin:password') }
+            });
+            const logs = await response.json();
+            let logText = 'Logs de Comandos:\n\n';
+            logs.forEach(log => {
+                logText += `${log.timestamp} - Usuario: ${log.user} - Servicio: ${log.service} - Comando: ${log.command}\nResultado: ${log.result}\n\n`;
+            });
+            document.getElementById('logsOutput').textContent = logText;
+            return logs; // Para exportar
+        };
+
+        let currentLogs = [];
+
+        document.getElementById('viewLogs').addEventListener('click', async () => {
+            document.getElementById('logsSection').style.display = 'block';
+            currentLogs = await fetchLogs();
+        });
+
+        document.getElementById('applyFilters').addEventListener('click', async () => {
+            const filters = {
+                user: document.getElementById('filterUser').value,
+                service: document.getElementById('filterService').value,
+                date: document.getElementById('filterDate').value
+            };
+            currentLogs = await fetchLogs(filters);
+        });
+
+        document.getElementById('exportLogs').addEventListener('click', () => {
+            const dataStr = JSON.stringify(currentLogs, null, 2);
+            const dataBlob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(dataBlob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = 'logs.json';
+            link.click();
+            showNotification('Logs exportados exitosamente.');
+        });
+
+        document.getElementById('integrateExternal').addEventListener('click', async () => {
+            // Simulación de integración con API externa (ej. webhook)
+            const externalAPI = 'https://httpbin.org/post'; // Placeholder
+            const data = { logs: currentLogs, source: 'OrcSOC' };
+            try {
+                const response = await fetch(externalAPI, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                const result = await response.json();
+                showNotification('Integración exitosa con API externa.');
+                console.log('Respuesta externa:', result);
+            } catch (error) {
+                showNotification('Error en integración externa.', 'error');
+            }
+        });
+
+        document.getElementById('logout').addEventListener('click', () => {
+            location.reload();
+        });
+
+        // Load playbooks on page load
+        async function loadPlaybooks() {
+            try {
+                const response = await fetch('/playbooks', {
+                    headers: { 'Authorization': 'Basic ' + btoa('admin:password') }
+                });
+                const playbooks = await response.json();
+                
+                const listDiv = document.getElementById('playbooksList');
+                listDiv.innerHTML = '<h3>Playbooks Disponibles:</h3>';
+                
+                playbooks.forEach(pb => {
+                    const card = document.createElement('div');
+                    card.style = 'background: #fff; padding: 15px; margin: 10px 0; border: 1px solid #ddd; border-radius: 5px; cursor: pointer;';
+                    card.innerHTML = `
+                        <h4>${pb.name}</h4>
+                        <p>${pb.description}</p>
+                        <small>Pasos: ${pb.steps_count} | Análisis IA: ${pb.ai_analysis ? 'Sí' : 'No'}</small>
+                    `;
+                    card.onclick = () => selectPlaybook(pb);
+                    listDiv.appendChild(card);
+                });
+            } catch (error) {
+                console.error('Error loading playbooks:', error);
+            }
+        }
+
+        let selectedPlaybook = null;
+
+        function selectPlaybook(playbook) {
+            selectedPlaybook = playbook;
+            document.getElementById('playbookExecution').style.display = 'block';
+            document.getElementById('playbookName').textContent = playbook.name;
+            document.getElementById('playbookDescription').textContent = playbook.description;
+            document.getElementById('playbookResults').innerHTML = '';
+            document.getElementById('playbookTarget').value = '';
+        }
+
+        document.getElementById('runPlaybookBtn').addEventListener('click', async () => {
+            if (!selectedPlaybook) return;
+            
+            const target = document.getElementById('playbookTarget').value;
+            if (!target) {
+                showNotification('Ingresa un target', 'error');
+                return;
+            }
+            
+            const resultsDiv = document.getElementById('playbookResults');
+            resultsDiv.innerHTML = '<p>Ejecutando playbook... esto puede tomar varios minutos.</p>';
+            document.getElementById('runPlaybookBtn').disabled = true;
+            
+            try {
+                const response = await fetch('/playbook/run', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Basic ' + btoa('admin:password')
+                    },
+                    body: JSON.stringify({
+                        playbook_id: selectedPlaybook.id,
+                        target: target
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.error) {
+                    resultsDiv.innerHTML = `<p style="color: red;">Error: ${result.error}</p>`;
+                } else {
+                    let html = `<h3>Resultados del Playbook</h3>`;
+                    html += `<p><strong>Target:</strong> ${result.target}</p>`;
+                    html += `<p><strong>Timestamp:</strong> ${result.timestamp}</p>`;
+                    
+                    html += '<h4>Pasos Ejecutados:</h4>';
+                    result.steps.forEach((step, i) => {
+                        const statusColor = step.success ? '#28a745' : '#dc3545';
+                        html += `<div style="background: #f4f4f4; padding: 10px; margin: 10px 0; border-left: 5px solid ${statusColor};">`;
+                        html += `<strong>${i + 1}. ${step.description}</strong><br>`;
+                        html += `<small>Servicio: ${step.service} | Duración: ${step.duration_ms}ms</small><br>`;
+                        if (step.success) {
+                            html += `<pre style="max-height: 200px; overflow-y: auto;">${step.output.substring(0, 500)}</pre>`;
+                        } else {
+                            html += `<p style="color: red;">Error: ${step.error}</p>`;
+                        }
+                        html += '</div>';
+                    });
+                    
+                    if (result.ai_analysis) {
+                        html += '<h4 style="margin-top: 20px;">Análisis IA:</h4>';
+                        html += `<div style="background: #e8f4fd; padding: 15px; border-left: 5px solid #007bff;">`;
+                        html += `<pre style="white-space: pre-wrap;">${result.ai_analysis}</pre>`;
+                        html += '</div>';
+                    }
+                    
+                    resultsDiv.innerHTML = html;
+                    showNotification('Playbook completado exitosamente', 'success');
+                }
+            } catch (error) {
+                resultsDiv.innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
+                showNotification('Error ejecutando playbook', 'error');
+            } finally {
+                document.getElementById('runPlaybookBtn').disabled = false;
+            }
+        });
+
+        // Load playbooks when page loads
+        loadPlaybooks();
+    </script>
+</body>
+</html>

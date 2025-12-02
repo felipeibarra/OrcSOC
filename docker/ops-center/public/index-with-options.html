@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OrcSOC - Security Operations Center</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        /* Input Central */
+        .main-input-section {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+
+        .main-input-section h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            margin-bottom: 20px;
+        }
+
+        /* Action Cards */
+        .actions-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .action-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            text-align: center;
+        }
+
+        .action-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+        }
+
+        .action-card .icon {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            animation: fadeIn 0.3s;
+        }
+
+        .modal.show {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            max-width: 700px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            animation: slideUp 0.3s;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .modal-header h3 {
+            color: #667eea;
+            font-size: 1.5em;
+        }
+
+        .close-modal {
+            background: none;
+            border: none;
+            font-size: 2em;
+            color: #999;
+            cursor: pointer;
+            line-height: 1;
+        }
+
+        .close-modal:hover {
+            color: #333;
+        }
+
+        .option-card {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 2px solid transparent;
+        }
+
+        .option-card:hover {
+            border-color: #667eea;
+            transform: translateX(5px);
+        }
+
+        .option-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .option-name {
+            font-weight: bold;
+            font-size: 1.1em;
+            color: #333;
+        }
+
+        .option-badges {
+            display: flex;
+            gap: 5px;
+        }
+
+        .badge {
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.75em;
+            font-weight: bold;
+        }
+
+        .badge-nivel {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+
+        .badge-tiempo {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .option-description {
+            color: #666;
+            line-height: 1.5;
+            font-size: 0.95em;
+        }
+
+        /* Results */
+        .results-section {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            margin-top: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            display: none;
+        }
+
+        .results-section.active {
+            display: block;
+        }
+
+        .status-badge {
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: bold;
+        }
+
+        .status-badge.running {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .status-badge.success {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-badge.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .result-output {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            max-height: 400px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            border: 1px solid #e0e0e0;
+        }
+
+        .btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .tab {
+            padding: 10px 20px;
+            background: #f8f9fa;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+        }
+
+        .tab.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 20px;
+            border-radius: 10px;
+            color: white;
+            font-weight: bold;
+            z-index: 1000;
+            animation: slideIn 0.3s;
+            display: none;
+        }
+
+        .notification.show {
+            display: block;
+        }
+
+        .notification.success {
+            background: #28a745;
+        }
+
+        .notification.error {
+            background: #dc3545;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+            }
+            to {
+                transform: translateX(0);
+            }
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🛡️ OrcSOC</h1>
+            <p>Security Operations Center - Plataforma Integral con IA</p>
+        </div>
+
+        <div class="main-input-section">
+            <h2>🎯 Analizar Objetivo</h2>
+            <input type="text" id="targetInput" placeholder="Ingresa dominio, URL o IP (ej: example.com)">
+            
+            <div class="actions-grid" id="actionsGrid">
+                <!-- Populated dynamically -->
+            </div>
+        </div>
+
+        <div class="results-section" id="resultsSection">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h3 style="color: #667eea;">📊 Resultados</h3>
+                <span class="status-badge running" id="statusBadge">Ejecutando...</span>
+            </div>
+
+            <div class="tabs">
+                <button class="tab active" onclick="switchTab('output')">Output</button>
+                <button class="tab" onclick="switchTab('analysis')">Análisis IA</button>
+            </div>
+
+            <div class="tab-content active" id="outputTab">
+                <div class="result-output" id="resultOutput">
+                    <div class="loading"></div> Ejecutando análisis...
+                </div>
+                <button class="btn btn-primary" onclick="analyzeWithAI()" style="margin-top: 20px;">
+                    🤖 Analizar con IA
+                </button>
+            </div>
+
+            <div class="tab-content" id="analysisTab">
+                <div style="background: linear-gradient(135deg, #e8f4fd 0%, #e0e7ff 100%); border-left: 4px solid #667eea; border-radius: 10px; padding: 20px;">
+                    <h4 style="color: #667eea; margin-bottom: 15px;">🤖 Análisis de Inteligencia Artificial</h4>
+                    <div style="line-height: 1.6; color: #333;" id="aiAnalysisContent">
+                        Click en "Analizar con IA" para obtener un análisis inteligente.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for options -->
+    <div class="modal" id="optionsModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalTitle">Selecciona una opción</h3>
+                <button class="close-modal" onclick="closeModal()">&times;</button>
+            </div>
+            <div id="optionsContainer">
+                <!-- Options populated dynamically -->
+            </div>
+        </div>
+    </div>
+
+    <div class="notification" id="notification"></div>
+
+    <script>
+        const socket = io();
+        let templates = {};
+        let currentJobId = null;
+        let currentOutput = '';
+        let currentTool = '';
+
+        const AUTH_HEADER = 'Basic ' + btoa('admin:password');
+
+        // Load templates
+        async function loadTemplates() {
+            try {
+                const response = await fetch('/templates');
+                templates = await response.json();
+                renderActionCards();
+            } catch (error) {
+                console.error('Error loading templates:', error);
+            }
+        }
+
+        // Render action cards
+        function renderActionCards() {
+            const grid = document.getElementById('actionsGrid');
+            grid.innerHTML = Object.keys(templates).map(key => {
+                const template = templates[key];
+                return `
+                    <div class="action-card" onclick="showOptions('${key}')">
+                        <div class="icon">${template.icon}</div>
+                        <div style="font-weight: bold; margin-bottom: 5px;">${template.name}</div>
+                        <div style="font-size: 0.9em; opacity: 0.9;">${template.options.length} opciones</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Show options modal
+        function showOptions(templateId) {
+            const target = document.getElementById('targetInput').value.trim();
+            
+            if (!target) {
+                showNotification('Por favor ingresa un objetivo válido', 'error');
+                return;
+            }
+
+            const template = templates[templateId];
+            document.getElementById('modalTitle').innerHTML = `${template.icon} ${template.name}`;
+            
+            const optionsHtml = template.options.map(option => `
+                <div class="option-card" onclick="executeOption('${templateId}', '${option.id}')">
+                    <div class="option-header">
+                        <div class="option-name">${option.name}</div>
+                        <div class="option-badges">
+                            <span class="badge badge-nivel">${option.nivel}</span>
+                            <span class="badge badge-tiempo">⏱️ ${option.tiempo}</span>
+                        </div>
+                    </div>
+                    <div class="option-description">${option.description}</div>
+                </div>
+            `).join('');
+            
+            document.getElementById('optionsContainer').innerHTML = optionsHtml;
+            document.getElementById('optionsModal').classList.add('show');
+        }
+
+        // Close modal
+        function closeModal() {
+            document.getElementById('optionsModal').classList.remove('show');
+        }
+
+        // Execute option
+        async function executeOption(templateId, optionId) {
+            const target = document.getElementById('targetInput').value.trim();
+            
+            closeModal();
+            
+            const template = templates[templateId];
+            const option = template.options.find(o => o.id === optionId);
+            currentTool = optionId;
+
+            // Show results section
+            document.getElementById('resultsSection').classList.add('active');
+            document.getElementById('statusBadge').className = 'status-badge running';
+            document.getElementById('statusBadge').textContent = 'Ejecutando...';
+            document.getElementById('resultOutput').innerHTML = '<div class="loading"></div> Ejecutando ' + option.name + '...';
+            document.getElementById('aiAnalysisContent').textContent = 'Esperando resultados...';
+
+            try {
+                const response = await fetch('/exec/template', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ templateId, optionId, target })
+                });
+
+                const result = await response.json();
+                
+                if (result.error) {
+                    showNotification('Error: ' + result.error, 'error');
+                    document.getElementById('statusBadge').className = 'status-badge error';
+                    document.getElementById('statusBadge').textContent = 'Error';
+                    document.getElementById('resultOutput').textContent = 'Error: ' + result.error;
+                } else {
+                    currentJobId = result.jobId;
+                    showNotification('Análisis iniciado: ' + result.templateName, 'success');
+                }
+            } catch (error) {
+                showNotification('Error al ejecutar comando', 'error');
+                document.getElementById('statusBadge').className = 'status-badge error';
+                document.getElementById('statusBadge').textContent = 'Error';
+            }
+        }
+
+        // WebSocket events
+        socket.on('job:complete', (data) => {
+            if (data.jobId == currentJobId) {
+                currentOutput = data.result;
+                document.getElementById('statusBadge').className = 'status-badge success';
+                document.getElementById('statusBadge').textContent = `Completado (${data.duration}ms)`;
+                document.getElementById('resultOutput').textContent = data.result;
+                showNotification('Análisis completado', 'success');
+            }
+        });
+
+        socket.on('job:error', (data) => {
+            if (data.jobId == currentJobId) {
+                document.getElementById('statusBadge').className = 'status-badge error';
+                document.getElementById('statusBadge').textContent = 'Error';
+                document.getElementById('resultOutput').textContent = 'Error: ' + data.error;
+                showNotification('Error en análisis', 'error');
+            }
+        });
+
+        // Analyze with AI
+        async function analyzeWithAI() {
+            if (!currentOutput) {
+                showNotification('No hay resultados para analizar', 'error');
+                return;
+            }
+
+            document.getElementById('aiAnalysisContent').innerHTML = '<div class="loading"></div> Analizando con IA...';
+            switchTab('analysis');
+
+            try {
+                const response = await fetch('/analyze', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        tool: currentTool,
+                        output: currentOutput,
+                        target: document.getElementById('targetInput').value
+                    })
+                });
+
+                const result = await response.json();
+                
+                if (result.error) {
+                    document.getElementById('aiAnalysisContent').textContent = 'Error: ' + result.error;
+                    showNotification('Error en análisis IA', 'error');
+                } else {
+                    document.getElementById('aiAnalysisContent').textContent = result.analysis;
+                    showNotification('Análisis IA completado', 'success');
+                }
+            } catch (error) {
+                document.getElementById('aiAnalysisContent').textContent = 'Error al comunicarse con IA';
+                showNotification('Error en análisis IA', 'error');
+            }
+        }
+
+        // Switch tab
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            
+            if (tabName === 'output') {
+                document.querySelectorAll('.tab')[0].classList.add('active');
+                document.getElementById('outputTab').classList.add('active');
+            } else {
+                document.querySelectorAll('.tab')[1].classList.add('active');
+                document.getElementById('analysisTab').classList.add('active');
+            }
+        }
+
+        // Show notification
+        function showNotification(message, type) {
+            const notif = document.getElementById('notification');
+            notif.textContent = message;
+            notif.className = `notification ${type} show`;
+            setTimeout(() => notif.classList.remove('show'), 3000);
+        }
+
+        // Initialize
+        loadTemplates();
+    </script>
+</body>
+</html>
