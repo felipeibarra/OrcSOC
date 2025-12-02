@@ -17,33 +17,53 @@ def run_tool(tool_func):
     except Exception as e:
         return {"error": str(e)}
 
-def enrich_domain(domain):
-    """Run comprehensive domain reconnaissance"""
+def enrich_domain(domain, level="full"):
+    """Run comprehensive domain reconnaissance
+    
+    Args:
+        domain: Target domain
+        level: Reconnaissance level (basic, full)
+            - basic: whois + nslookup only
+            - full: all tools (subfinder, harvester, whois, nslookup)
+    """
     results = {
         "target": domain,
         "type": "domain",
+        "level": level,
         "tools_executed": []
     }
     
-    # Define tools to run
-    tools = {
-        "subfinder": lambda: subprocess.run(
-            ["python", "tools/subfinder_wrapper.py", "--domain", domain],
-            capture_output=True, text=True, timeout=180
-        ),
-        "harvester": lambda: subprocess.run(
-            ["python", "tools/harvester_wrapper.py", "--domain", domain, "--sources", "google,bing"],
-            capture_output=True, text=True, timeout=300
-        ),
-        "whois": lambda: subprocess.run(
-            ["whois", domain],
-            capture_output=True, text=True, timeout=30
-        ),
-        "nslookup": lambda: subprocess.run(
-            ["nslookup", domain],
-            capture_output=True, text=True, timeout=30
-        )
-    }
+    # Define tools to run based on level
+    if level == "basic":
+        tools = {
+            "whois": lambda: subprocess.run(
+                ["whois", domain],
+                capture_output=True, text=True, timeout=30
+            ),
+            "nslookup": lambda: subprocess.run(
+                ["nslookup", domain],
+                capture_output=True, text=True, timeout=30
+            )
+        }
+    else:  # full level
+        tools = {
+            "subfinder": lambda: subprocess.run(
+                ["python", "tools/subfinder_wrapper.py", "--domain", domain],
+                capture_output=True, text=True, timeout=180
+            ),
+            "harvester": lambda: subprocess.run(
+                ["python", "tools/harvester_wrapper.py", "--domain", domain, "--sources", "google,bing"],
+                capture_output=True, text=True, timeout=300
+            ),
+            "whois": lambda: subprocess.run(
+                ["whois", domain],
+                capture_output=True, text=True, timeout=30
+            ),
+            "nslookup": lambda: subprocess.run(
+                ["nslookup", domain],
+                capture_output=True, text=True, timeout=30
+            )
+        }
     
     # Execute tools in parallel
     with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
@@ -157,10 +177,11 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="OSINT Enrichment Orchestrator")
     parser.add_argument("--target", required=True, help="Target to enrich")
     parser.add_argument("--type", choices=["domain", "ip", "email"], default="domain", help="Target type")
+    parser.add_argument("--level", choices=["basic", "full"], default="full", help="Reconnaissance level (basic=whois+dns only, full=all tools)")
     args = parser.parse_args()
     
     if args.type == "domain":
-        result = enrich_domain(args.target)
+        result = enrich_domain(args.target, args.level)
     elif args.type == "ip":
         result = enrich_ip(args.target)
     else:

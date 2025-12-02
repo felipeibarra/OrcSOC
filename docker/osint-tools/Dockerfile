@@ -17,8 +17,36 @@ RUN pip install --no-cache-dir \
     requests \
     beautifulsoup4 \
     dnspython \
+    shodan
+
+# Instalar dependencias necesarias para theHarvester
+RUN pip install --no-cache-dir \
+    aiodns \
+    aiofiles \
+    aiohttp \
+    aiomultiprocess \
+    aiosqlite \
+    beautifulsoup4 \
+    censys \
+    certifi \
+    dnspython \
+    lxml \
+    netaddr \
+    plotly \
+    pyppeteer \
+    python-dateutil \
+    pyyaml \
+    requests \
+    retrying \
     shodan \
-    theHarvester
+    ujson \
+    uvloop
+
+# Instalar theHarvester desde GitHub
+RUN git clone https://github.com/laramies/theHarvester.git /opt/theHarvester && \
+    cd /opt/theHarvester && \
+    chmod +x theHarvester.py && \
+    ln -s /opt/theHarvester/theHarvester.py /usr/local/bin/theHarvester
 
 # Instalar Subfinder
 RUN go install -v github.com/projectdiscovery/subfinder/v2/cmd/subfinder@latest

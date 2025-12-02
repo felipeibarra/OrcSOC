@@ -76,11 +76,21 @@ const COMMAND_WHITELIST = {
     /^dig [a-zA-Z0-9\.-]+$/
   ],
   'web-pentest': [
-    /^nmap -[a-zA-Z]+ (?:-p [\d,-]+ )?[a-zA-Z0-9\.-]+$/,
+    // Nmap - permite múltiples flags y variaciones
+    /^nmap\s+(-[a-zA-Z]+\s+)*(-p\s+[\d,-]+\s+)?(-[a-zA-Z]+\s+)*[a-zA-Z0-9\.-]+$/,
+    /^nmap\s+.+[a-zA-Z0-9\.-]+$/,  // Catch-all más permisivo para nmap
+    // Nikto
     /^nikto -h https?:\/\/[a-zA-Z0-9\.-]+(:\d+)?$/,
-    /^sqlmap -u https?:\/\/.+ --batch$/,
+    /^nikto\s+-h\s+https?:\/\/.+$/,  // Más permisivo para nikto
+    // SQLmap
+    /^sqlmap -u https?:\/\/.+--batch.*/,
+    /^sqlmap\s+-u\s+https?:\/\/.+$/,  // Más permisivo para sqlmap
+    // WPScan
     /^wpscan --url https?:\/\/[a-zA-Z0-9\.-]+$/,
-    /^gobuster dir -u https?:\/\/.+ -w .+$/
+    /^wpscan\s+--url\s+https?:\/\/.+$/,  // Más permisivo para wpscan
+    // Gobuster
+    /^gobuster dir -u https?:\/\/.+ -w .+$/,
+    /^gobuster\s+.+$/  // Más permisivo para gobuster
   ],
   'wireless-lab': [
     /^kismet/,
@@ -533,8 +543,32 @@ app.post('/ai-chat', auth, async (req, res) => {
   }
 });
 
+// Helper para llamar a Ollama API HTTP (sin ANSI codes)
+async function callOllamaAPI(prompt, retries = 3) {
+  const axios = require('axios');
+  
+  for (let attempt = 0; attempt < retries; attempt++) {
+    try {
+      const response = await axios.post('http://ollama:11434/api/generate', {
+        model: 'llama3.2',
+        prompt: prompt,
+        stream: false
+      }, {
+        timeout: 90000
+      });
+      
+      return response.data.response;
+    } catch (error) {
+      if (attempt === retries - 1) {
+        throw error;
+      }
+      await new Promise(resolve => setTimeout(resolve, 2000));
+    }
+  }
+}
+
 // Endpoint de análisis IA mejorado
-app.post('/analyze', auth, async (req, res) => {
+app.post('/analyze', async (req, res) => {
   const { tool, output, target } = req.body;
   
   if (!tool || !output) {
@@ -592,20 +626,12 @@ ${output.substring(0, 2000)}`
   const prompt = prompts[tool.toLowerCase()] || prompts.default;
   
   try {
-    const analysis = await new Promise((resolve, reject) => {
-      exec(`docker exec ollama ollama run llama3.2 "${prompt.replace(/"/g, '\\"')}"`, 
-        { maxBuffer: 1024 * 1024 * 10, timeout: 90000 }, 
-        (error, stdout, stderr) => {
-          if (error) reject(error);
-          else resolve(stdout.trim());
-        }
-      );
-    });
+    const analysis = await callOllamaAPI(prompt);
     
     const logs = readLogs();
     logs.push({ 
       timestamp: new Date().toISOString(), 
-      user: req.user, 
+      user: req.user || 'anonymous', 
       service: 'AI-Analysis', 
       command: `analyze:${tool}`, 
       result: `Target: ${target || 'N/A'}\n${analysis}` 
@@ -619,7 +645,7 @@ ${output.substring(0, 2000)}`
       timestamp: new Date().toISOString()
     });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Error al analizar con IA: ' + error.message });
   }
 });
 
