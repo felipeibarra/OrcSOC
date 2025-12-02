@@ -114,6 +114,195 @@
             opacity: 0.9;
         }
 
+        /* Navigation Tabs */
+        .nav-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .nav-tab {
+            padding: 12px 25px;
+            background: #f8f9fa;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s;
+            color: #333;
+        }
+
+        .nav-tab.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .nav-tab:hover {
+            transform: translateY(-2px);
+        }
+
+        /* Tab Content */
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Dashboard */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .metric-card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .metric-card .metric-value {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        .metric-card .metric-label {
+            color: #666;
+            font-size: 1.1em;
+        }
+
+        .charts-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 20px;
+        }
+
+        .chart-card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .chart-card h3 {
+            color: #667eea;
+            margin-bottom: 20px;
+        }
+
+        /* History */
+        .history-list {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .history-item {
+            border-bottom: 1px solid #eee;
+            padding: 15px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .history-item:last-child {
+            border-bottom: none;
+        }
+
+        .history-info h4 {
+            margin: 0 0 5px 0;
+            color: #333;
+        }
+
+        .history-meta {
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .history-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        /* Progress Indicators */
+        .progress-container {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .progress-step {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .progress-step:last-child {
+            margin-bottom: 0;
+        }
+
+        .step-indicator {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+            font-weight: bold;
+            color: white;
+        }
+
+        .step-indicator.pending {
+            background: #ccc;
+        }
+
+        .step-indicator.running {
+            background: #ffc107;
+            animation: pulse 1s infinite;
+        }
+
+        .step-indicator.completed {
+            background: #28a745;
+        }
+
+        .step-indicator.error {
+            background: #dc3545;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        .step-info {
+            flex: 1;
+        }
+
+        .step-info .step-title {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .step-info .step-description {
+            color: #666;
+            font-size: 0.9em;
+        }
+
         /* Results Section */
         .results-section {
             background: white;
@@ -346,6 +535,15 @@
             <p>Security Operations Center - Plataforma Integral de Ciberseguridad</p>
         </div>
 
+        <!-- Navigation Tabs -->
+        <div class="nav-tabs">
+            <button class="nav-tab active" onclick="switchTab('scan')">🔍 Escanear</button>
+            <button class="nav-tab" onclick="switchTab('dashboard')">📊 Dashboard</button>
+            <button class="nav-tab" onclick="switchTab('history')">📚 Historial</button>
+            <button class="nav-tab" onclick="switchTab('plugins')">🔌 Plugins</button>
+            <button class="nav-tab" onclick="switchTab('reports')">📄 Reportes</button>
+        </div>
+
         <!-- Services Status -->
         <div class="services-grid" id="servicesGrid">
             <div class="service-card">
@@ -354,74 +552,187 @@
             </div>
         </div>
 
-        <!-- Main Input Section -->
-        <div class="main-input-section">
-            <h2>🎯 Analizar Objetivo</h2>
-            <div class="input-group">
-                <input type="text" id="targetInput" placeholder="Ingresa dominio, URL o IP (ej: example.com, https://example.com, 192.168.1.1)">
+        <!-- Scan Tab -->
+        <div class="tab-content active" id="scanTab">
+            <!-- Main Input Section -->
+            <div class="main-input-section">
+                <h2>🎯 Analizar Objetivo</h2>
+                <div class="input-group">
+                    <input type="text" id="targetInput" placeholder="Ingresa dominio, URL o IP (ej: example.com, https://example.com, 192.168.1.1)">
+                    <button class="btn btn-primary" onclick="runFullPipeline()">🚀 Pipeline Completo</button>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="actions-grid">
+                    <div class="action-card" onclick="runAction('recon-basico')">
+                        <div class="icon">🔍</div>
+                        <div class="title">Recon Básico</div>
+                        <div class="description">Subdominios rápidos</div>
+                    </div>
+
+                    <div class="action-card" onclick="runAction('osint-completo')">
+                        <div class="icon">🕵️</div>
+                        <div class="title">OSINT Completo</div>
+                        <div class="description">Análisis profundo</div>
+                    </div>
+
+                    <div class="action-card" onclick="runAction('escaneo-nmap')">
+                        <div class="icon">🔬</div>
+                        <div class="title">Escaneo Puertos</div>
+                        <div class="description">Nmap rápido</div>
+                    </div>
+
+                    <div class="action-card" onclick="runAction('vuln-web')">
+                        <div class="icon">🛡️</div>
+                        <div class="title">Vulnerabilidades</div>
+                        <div class="description">Nikto scan</div>
+                    </div>
+
+                    <div class="action-card" onclick="runAction('harvester-emails')">
+                        <div class="icon">📧</div>
+                        <div class="title">Buscar Emails</div>
+                        <div class="description">theHarvester</div>
+                    </div>
+
+                    <div class="action-card" onclick="runExternalAPI('shodan')">
+                        <div class="icon">🌐</div>
+                        <div class="title">Shodan</div>
+                        <div class="description">Búsqueda en Shodan</div>
+                    </div>
+                </div>
             </div>
 
-            <!-- Quick Actions -->
-            <div class="actions-grid">
-                <div class="action-card" onclick="runAction('recon-basico')">
-                    <div class="icon">🔍</div>
-                    <div class="title">Recon Básico</div>
-                    <div class="description">Subdominios rápidos</div>
+            <!-- Progress Indicators -->
+            <div class="progress-container" id="progressContainer" style="display: none;">
+                <h3>📈 Progreso de Análisis</h3>
+                <div id="progressSteps"></div>
+            </div>
+
+            <!-- Results Section -->
+            <div class="results-section" id="resultsSection">
+                <div class="results-header">
+                    <h3>📊 Resultados</h3>
+                    <div>
+                        <span class="status-badge running" id="statusBadge">Ejecutando...</span>
+                        <button class="btn btn-secondary" onclick="generatePDF()" style="margin-left: 10px;">📄 PDF</button>
+                    </div>
                 </div>
 
-                <div class="action-card" onclick="runAction('osint-completo')">
-                    <div class="icon">🕵️</div>
-                    <div class="title">OSINT Completo</div>
-                    <div class="description">Análisis profundo</div>
+                <div class="tabs">
+                    <button class="tab active" onclick="switchResultTab('output')">Output</button>
+                    <button class="tab" onclick="switchResultTab('analysis')">Análisis IA</button>
+                    <button class="tab" onclick="switchResultTab('visualizations')">Visualizaciones</button>
                 </div>
 
-                <div class="action-card" onclick="runAction('escaneo-nmap')">
-                    <div class="icon">🔬</div>
-                    <div class="title">Escaneo Puertos</div>
-                    <div class="description">Nmap rápido</div>
+                <div class="tab-content active" id="outputTab">
+                    <div class="result-output" id="resultOutput">
+                        <div class="loading"></div> Esperando resultados...
+                    </div>
+                    <button class="btn btn-primary" onclick="analyzeWithAI()" style="margin-top: 20px;">
+                        🤖 Analizar con IA
+                    </button>
                 </div>
 
-                <div class="action-card" onclick="runAction('vuln-web')">
-                    <div class="icon">🛡️</div>
-                    <div class="title">Vulnerabilidades</div>
-                    <div class="description">Nikto scan</div>
+                <div class="tab-content" id="analysisTab">
+                    <div class="ai-analysis">
+                        <h4>🤖 Análisis de Inteligencia Artificial</h4>
+                        <div class="ai-analysis-content" id="aiAnalysisContent">
+                            Click en "Analizar con IA" para obtener un análisis inteligente de los resultados.
+                        </div>
+                    </div>
                 </div>
 
-                <div class="action-card" onclick="runAction('harvester-emails')">
-                    <div class="icon">📧</div>
-                    <div class="title">Buscar Emails</div>
-                    <div class="description">theHarvester</div>
+                <div class="tab-content" id="visualizationsTab">
+                    <div class="charts-container">
+                        <div class="chart-card">
+                            <h3>Puertos Abiertos</h3>
+                            <canvas id="portsChart"></canvas>
+                        </div>
+                        <div class="chart-card">
+                            <h3>Distribución de Severidad</h3>
+                            <canvas id="severityChart"></canvas>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <!-- Results Section -->
-        <div class="results-section" id="resultsSection">
-            <div class="results-header">
-                <h3>📊 Resultados</h3>
-                <span class="status-badge running" id="statusBadge">Ejecutando...</span>
-            </div>
-
-            <div class="tabs">
-                <button class="tab active" onclick="switchTab('output')">Output</button>
-                <button class="tab" onclick="switchTab('analysis')">Análisis IA</button>
-            </div>
-
-            <div class="tab-content active" id="outputTab">
-                <div class="result-output" id="resultOutput">
-                    <div class="loading"></div> Ejecutando análisis...
+        <!-- Dashboard Tab -->
+        <div class="tab-content" id="dashboardTab">
+            <div class="dashboard-grid" id="dashboardGrid">
+                <div class="metric-card">
+                    <div class="metric-value" id="totalInvestigations">0</div>
+                    <div class="metric-label">Investigaciones Totales</div>
                 </div>
-                <button class="btn btn-primary" onclick="analyzeWithAI()" style="margin-top: 20px;">
-                    🤖 Analizar con IA
-                </button>
+                <div class="metric-card">
+                    <div class="metric-value" id="successfulScans">0</div>
+                    <div class="metric-label">Escaneos Exitosos</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value" id="avgDuration">0ms</div>
+                    <div class="metric-label">Duración Promedio</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-value" id="targetsScanned">0</div>
+                    <div class="metric-label">Objetivos Analizados</div>
+                </div>
             </div>
 
-            <div class="tab-content" id="analysisTab">
-                <div class="ai-analysis">
-                    <h4>🤖 Análisis de Inteligencia Artificial</h4>
-                    <div class="ai-analysis-content" id="aiAnalysisContent">
-                        Click en "Analizar con IA" para obtener un análisis inteligente de los resultados.
-                    </div>
+            <div class="charts-container">
+                <div class="chart-card">
+                    <h3>Actividad Reciente</h3>
+                    <canvas id="activityChart"></canvas>
+                </div>
+                <div class="chart-card">
+                    <h3>Uso de Servicios</h3>
+                    <canvas id="serviceChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- History Tab -->
+        <div class="tab-content" id="historyTab">
+            <div class="history-list" id="historyList">
+                <h3>📚 Historial de Investigaciones</h3>
+                <div id="historyContent">Cargando historial...</div>
+            </div>
+        </div>
+
+        <!-- Reports Tab -->
+        <div class="tab-content" id="reportsTab">
+            <div class="main-input-section">
+                <h2>📄 Generar Reportes</h2>
+                <div class="input-group">
+                    <input type="text" id="reportTarget" placeholder="Objetivo para el reporte">
+                    <button class="btn btn-primary" onclick="generateCustomReport()">📊 Generar Reporte</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Plugins Tab -->
+        <div class="tab-content" id="pluginsTab">
+            <div class="main-input-section">
+                <h2>🔌 Sistema de Plugins</h2>
+                <div class="input-group">
+                    <input type="text" id="pluginName" placeholder="Nombre del plugin">
+                    <input type="text" id="pluginDescription" placeholder="Descripción del plugin">
+                    <button class="btn btn-primary" onclick="createPlugin()">➕ Crear Plugin</button>
+                </div>
+            </div>
+
+            <div class="history-list" id="pluginsList">
+                <h3>Plugins Disponibles</h3>
+                <div id="pluginsContent">Cargando plugins...</div>
+            </div>
+
+            <div class="main-input-section">
+                <h3>Ejecutar Plugin</h3>
+                <div class="input-group">
+                    <select id="pluginSelect">
+                        <option value="">Seleccionar plugin...</option>
+                    </select>
+                    <input type="text" id="pluginTarget" placeholder="Objetivo">
+                    <button class="btn btn-primary" onclick="executePlugin()">▶️ Ejecutar</button>
                 </div>
             </div>
         </div>
@@ -429,13 +740,50 @@
 
     <div class="notification" id="notification"></div>
 
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
     <script>
         const socket = io();
         let currentJobId = null;
         let currentOutput = '';
         let currentTool = '';
+        let currentProgressSteps = [];
 
         const AUTH_HEADER = 'Basic ' + btoa('admin:password');
+
+        // Tab switching
+        function switchTab(tabName) {
+            document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            
+            document.querySelector(`[onclick="switchTab('${tabName}')"]`).classList.add('active');
+            document.getElementById(`${tabName}Tab`).classList.add('active');
+            
+            if (tabName === 'dashboard') {
+                loadDashboard();
+            } else if (tabName === 'history') {
+                loadHistory();
+            } else if (tabName === 'plugins') {
+                loadPlugins();
+            }
+        }
+
+        function switchResultTab(tabName) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            
+            if (tabName === 'output') {
+                document.querySelectorAll('.tab')[0].classList.add('active');
+                document.getElementById('outputTab').classList.add('active');
+            } else if (tabName === 'analysis') {
+                document.querySelectorAll('.tab')[1].classList.add('active');
+                document.getElementById('analysisTab').classList.add('active');
+            } else if (tabName === 'visualizations') {
+                document.querySelectorAll('.tab')[2].classList.add('active');
+                document.getElementById('visualizationsTab').classList.add('active');
+                generateVisualizations();
+            }
+        }
 
         // Load services status
         async function loadServices() {
@@ -457,8 +805,8 @@
             }
         }
 
-        // Run action
-        async function runAction(actionId) {
+        // Run full security pipeline
+        async function runFullPipeline() {
             const target = document.getElementById('targetInput').value.trim();
             
             if (!target) {
@@ -466,56 +814,437 @@
                 return;
             }
 
-            // Get template
-            const response = await fetch('/templates', {
-                headers: { 'Authorization': AUTH_HEADER }
-            });
-            const templates = await response.json();
-            const template = templates[actionId];
-
-            if (!template) {
-                showNotification('Template no encontrado', 'error');
-                return;
-            }
-
-            // Prepare command
-            const command = template.command.replace('{{target}}', target);
-            currentTool = actionId;
-
-            // Show results section
+            // Initialize progress steps
+            currentProgressSteps = [
+                { id: 'osint', title: 'OSINT Enrichment', description: 'WHOIS, DNS, basic recon', status: 'pending' },
+                { id: 'subfinder', title: 'Subdomain Enumeration', description: 'Finding subdomains', status: 'pending' },
+                { id: 'harvester', title: 'Email Harvesting', description: 'Collecting email addresses', status: 'pending' },
+                { id: 'nmap', title: 'Port Scanning', description: 'Scanning open ports', status: 'pending' },
+                { id: 'nikto', title: 'Web Vulnerability Scan', description: 'Nikto web scan', status: 'pending' },
+                { id: 'sqlmap', title: 'SQL Injection Test', description: 'Testing for SQL injection', status: 'pending' }
+            ];
+            
+            updateProgressDisplay();
+            document.getElementById('progressContainer').style.display = 'block';
             document.getElementById('resultsSection').classList.add('active');
-            document.getElementById('statusBadge').className = 'status-badge running';
-            document.getElementById('statusBadge').textContent = 'Ejecutando...';
-            document.getElementById('resultOutput').innerHTML = '<div class="loading"></div> Ejecutando ' + template.name + '...';
-            document.getElementById('aiAnalysisContent').textContent = 'Esperando resultados...';
-
-            // Execute command
+            
             try {
-                const execResponse = await fetch(`/exec/${template.service}`, {
+                const response = await fetch('/playbook/run', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                         'Authorization': AUTH_HEADER
                     },
-                    body: JSON.stringify({ command })
+                    body: JSON.stringify({
+                        playbook_id: 'full-pipeline',
+                        target: target
+                    })
                 });
 
-                const result = await execResponse.json();
+                const result = await response.json();
                 
                 if (result.error) {
-                    showNotification('Error: ' + result.error, 'error');
-                    document.getElementById('statusBadge').className = 'status-badge error';
-                    document.getElementById('statusBadge').textContent = 'Error';
-                    document.getElementById('resultOutput').textContent = 'Error: ' + result.error;
+                    showNotification('Error ejecutando pipeline: ' + result.error, 'error');
                 } else {
-                    currentJobId = result.jobId;
-                    showNotification('Análisis iniciado correctamente', 'success');
+                    showNotification('Pipeline completo iniciado', 'success');
+                    // Process results would come through WebSocket
                 }
             } catch (error) {
-                showNotification('Error al ejecutar comando', 'error');
-                document.getElementById('statusBadge').className = 'status-badge error';
-                document.getElementById('statusBadge').textContent = 'Error';
+                showNotification('Error ejecutando pipeline', 'error');
             }
+        }
+
+        // Update progress display
+        function updateProgressDisplay() {
+            const container = document.getElementById('progressSteps');
+            container.innerHTML = currentProgressSteps.map(step => `
+                <div class="progress-step">
+                    <div class="step-indicator ${step.status}">${getStepIcon(step.status)}</div>
+                    <div class="step-info">
+                        <div class="step-title">${step.title}</div>
+                        <div class="step-description">${step.description}</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function getStepIcon(status) {
+            switch (status) {
+                case 'pending': return '⏳';
+                case 'running': return '🔄';
+                case 'completed': return '✅';
+                case 'error': return '❌';
+                default: return '⏳';
+            }
+        }
+
+        // Run external API
+        async function runExternalAPI(service) {
+            const target = document.getElementById('targetInput').value.trim();
+            
+            if (!target) {
+                showNotification('Por favor ingresa un objetivo válido', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/external/${service}/${target}`, {
+                    headers: { 'Authorization': AUTH_HEADER }
+                });
+
+                const result = await response.json();
+                
+                if (result.error) {
+                    showNotification('Error consultando API: ' + result.error, 'error');
+                } else {
+                    document.getElementById('resultsSection').classList.add('active');
+                    document.getElementById('resultOutput').textContent = JSON.stringify(result, null, 2);
+                    showNotification(`Datos de ${service} obtenidos`, 'success');
+                }
+            } catch (error) {
+                showNotification('Error consultando API externa', 'error');
+            }
+        }
+
+        // Load dashboard metrics
+        async function loadDashboard() {
+            try {
+                const response = await fetch('/dashboard/metrics', {
+                    headers: { 'Authorization': AUTH_HEADER }
+                });
+                
+                const metrics = await response.json();
+                
+                document.getElementById('totalInvestigations').textContent = metrics.total_investigations;
+                document.getElementById('successfulScans').textContent = metrics.successful_scans;
+                document.getElementById('avgDuration').textContent = Math.round(metrics.avg_duration) + 'ms';
+                document.getElementById('targetsScanned').textContent = metrics.targets_scanned;
+                
+                // Generate charts
+                generateDashboardCharts(metrics);
+            } catch (error) {
+                console.error('Error loading dashboard:', error);
+            }
+        }
+
+        // Generate dashboard charts
+        function generateDashboardCharts(metrics) {
+            // Service usage chart
+            const serviceCtx = document.getElementById('serviceChart').getContext('2d');
+            new Chart(serviceCtx, {
+                type: 'pie',
+                data: {
+                    labels: Object.keys(metrics.service_usage),
+                    datasets: [{
+                        data: Object.values(metrics.service_usage),
+                        backgroundColor: ['#667eea', '#764ba2', '#f093fb', '#f5576c', '#4facfe']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { position: 'bottom' }
+                    }
+                }
+            });
+
+            // Activity chart (simplified)
+            const activityCtx = document.getElementById('activityChart').getContext('2d');
+            const recentDates = metrics.recent_activity.map(item => 
+                new Date(item.timestamp).toLocaleDateString()
+            );
+            const successCounts = recentDates.map(date => 
+                metrics.recent_activity.filter(item => 
+                    new Date(item.timestamp).toLocaleDateString() === date && item.success
+                ).length
+            );
+
+            new Chart(activityCtx, {
+                type: 'line',
+                data: {
+                    labels: [...new Set(recentDates)],
+                    datasets: [{
+                        label: 'Escaneos Exitosos',
+                        data: successCounts,
+                        borderColor: '#28a745',
+                        backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: { beginAtZero: true }
+                    }
+                }
+            });
+        }
+
+        // Load history
+        async function loadHistory() {
+            try {
+                const response = await fetch('/history', {
+                    headers: { 'Authorization': AUTH_HEADER }
+                });
+                
+                const history = await response.json();
+                const historyContent = document.getElementById('historyContent');
+                
+                if (history.length === 0) {
+                    historyContent.innerHTML = '<p>No hay investigaciones en el historial</p>';
+                    return;
+                }
+                
+                historyContent.innerHTML = history.map(item => `
+                    <div class="history-item">
+                        <div class="history-info">
+                            <h4>${item.target} - ${item.service}</h4>
+                            <div class="history-meta">
+                                ${new Date(item.timestamp).toLocaleString()} | 
+                                ${item.success ? '✅ Exitoso' : '❌ Fallido'} | 
+                                ${item.duration}ms
+                            </div>
+                        </div>
+                        <div class="history-actions">
+                            <button class="btn btn-secondary" onclick="replayInvestigation('${item.id}')">🔄 Re-ejecutar</button>
+                        </div>
+                    </div>
+                `).join('');
+            } catch (error) {
+                console.error('Error loading history:', error);
+            }
+        }
+
+        // Load plugins
+        async function loadPlugins() {
+            try {
+                const response = await fetch('/plugins', {
+                    headers: { 'Authorization': AUTH_HEADER }
+                });
+                
+                const plugins = await response.json();
+                const pluginsContent = document.getElementById('pluginsContent');
+                const pluginSelect = document.getElementById('pluginSelect');
+                
+                if (plugins.length === 0) {
+                    pluginsContent.innerHTML = '<p>No hay plugins disponibles</p>';
+                    return;
+                }
+                
+                pluginsContent.innerHTML = plugins.map(plugin => `
+                    <div class="history-item">
+                        <div class="history-info">
+                            <h4>${plugin.name} v${plugin.version}</h4>
+                            <div class="history-meta">
+                                ${plugin.description}<br>
+                                Capacidades: ${plugin.capabilities.join(', ')}
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+                
+                // Populate select
+                pluginSelect.innerHTML = '<option value="">Seleccionar plugin...</option>' +
+                    plugins.map(p => `<option value="${p.name}">${p.name}</option>`).join('');
+                
+            } catch (error) {
+                console.error('Error loading plugins:', error);
+            }
+        }
+
+        // Create plugin
+        async function createPlugin() {
+            const name = document.getElementById('pluginName').value.trim();
+            const description = document.getElementById('pluginDescription').value.trim();
+            
+            if (!name || !description) {
+                showNotification('Por favor completa nombre y descripción', 'error');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/plugins/create', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': AUTH_HEADER
+                    },
+                    body: JSON.stringify({ name, description })
+                });
+                
+                const result = await response.json();
+                
+                if (result.error) {
+                    showNotification('Error creando plugin: ' + result.error, 'error');
+                } else {
+                    showNotification('Plugin template creado exitosamente', 'success');
+                    loadPlugins();
+                }
+            } catch (error) {
+                showNotification('Error creando plugin', 'error');
+            }
+        }
+
+        // Execute plugin
+        async function executePlugin() {
+            const pluginName = document.getElementById('pluginSelect').value;
+            const target = document.getElementById('pluginTarget').value.trim();
+            
+            if (!pluginName || !target) {
+                showNotification('Por favor selecciona un plugin y objetivo', 'error');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/plugins/execute', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': AUTH_HEADER
+                    },
+                    body: JSON.stringify({ plugin_name: pluginName, target })
+                });
+                
+                const result = await response.json();
+                
+                if (result.error) {
+                    showNotification('Error ejecutando plugin: ' + result.error, 'error');
+                } else {
+                    document.getElementById('resultsSection').classList.add('active');
+                    document.getElementById('resultOutput').textContent = JSON.stringify(result, null, 2);
+                    showNotification(`Plugin ${pluginName} ejecutado`, 'success');
+                }
+            } catch (error) {
+                showNotification('Error ejecutando plugin', 'error');
+            }
+        }
+
+        // Replay investigation
+        async function replayInvestigation(id) {
+            try {
+                const response = await fetch(`/history/replay/${id}`, {
+                    method: 'POST',
+                    headers: { 'Authorization': AUTH_HEADER }
+                });
+                
+                const result = await response.json();
+                
+                if (result.error) {
+                    showNotification('Error re-ejecutando: ' + result.error, 'error');
+                } else {
+                    showNotification('Re-ejecución iniciada', 'success');
+                    currentJobId = result.jobId;
+                }
+            } catch (error) {
+                showNotification('Error re-ejecutando investigación', 'error');
+            }
+        }
+
+        // Generate PDF report
+        async function generatePDF() {
+            if (!currentOutput) {
+                showNotification('No hay resultados para generar reporte', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch('/report/pdf', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': AUTH_HEADER
+                    },
+                    body: JSON.stringify({
+                        target: document.getElementById('targetInput').value,
+                        results: currentOutput,
+                        analysis: document.getElementById('aiAnalysisContent').textContent
+                    })
+                });
+
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `reporte-${document.getElementById('targetInput').value}-${Date.now()}.pdf`;
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    showNotification('Reporte PDF generado', 'success');
+                } else {
+                    showNotification('Error generando PDF', 'error');
+                }
+            } catch (error) {
+                showNotification('Error generando reporte PDF', 'error');
+            }
+        }
+
+        // Generate visualizations
+        function generateVisualizations() {
+            // Parse current output for ports
+            const portMatches = currentOutput.match(/(\d+)\/(tcp|udp)\s+open/g) || [];
+            const ports = portMatches.map(match => {
+                const [port, protocol] = match.split('/');
+                return { port: parseInt(port), protocol };
+            });
+
+            // Ports chart
+            const portsCtx = document.getElementById('portsChart').getContext('2d');
+            new Chart(portsCtx, {
+                type: 'bar',
+                data: {
+                    labels: ports.map(p => `${p.port}/${p.protocol}`),
+                    datasets: [{
+                        label: 'Puertos Abiertos',
+                        data: ports.map(() => 1),
+                        backgroundColor: '#667eea'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: { beginAtZero: true, ticks: { stepSize: 1 } }
+                    }
+                }
+            });
+
+            // Severity chart (mock data based on output)
+            const severityData = {
+                critical: (currentOutput.match(/critical/gi) || []).length,
+                high: (currentOutput.match(/high/gi) || []).length,
+                medium: (currentOutput.match(/medium/gi) || []).length,
+                low: (currentOutput.match(/low/gi) || []).length
+            };
+
+            const severityCtx = document.getElementById('severityChart').getContext('2d');
+            new Chart(severityCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Crítico', 'Alto', 'Medio', 'Bajo'],
+                    datasets: [{
+                        data: [severityData.critical, severityData.high, severityData.medium, severityData.low],
+                        backgroundColor: ['#dc3545', '#fd7e14', '#ffc107', '#28a745']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { position: 'bottom' }
+                    }
+                }
+            });
+        }
+
+        // Generate custom report
+        async function generateCustomReport() {
+            const target = document.getElementById('reportTarget').value.trim();
+            
+            if (!target) {
+                showNotification('Por favor ingresa un objetivo', 'error');
+                return;
+            }
+
+            // This would aggregate data from history and generate a comprehensive report
+            showNotification('Funcionalidad de reporte personalizado en desarrollo', 'error');
         }
 
         // WebSocket events

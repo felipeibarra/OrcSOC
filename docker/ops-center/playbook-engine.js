@@ -25,7 +25,7 @@ function executeStep(service, command) {
 /**
  * Run a complete playbook
  */
-async function runPlaybook(playbookId, target, user) {
+async function runPlaybook(playbookId, target, user, options = {}) {
   const playbook = playbooks.find(p => p.id === playbookId);
   
   if (!playbook) {
@@ -40,7 +40,7 @@ async function runPlaybook(playbookId, target, user) {
     aggregated_output: ''
   };
 
-  // Execute steps sequentially
+  // Execute steps sequentially with optional delays for stealth mode
   for (const step of playbook.steps) {
     const command = step.command.replace(/{{target}}/g, target);
     
@@ -62,6 +62,13 @@ async function runPlaybook(playbookId, target, user) {
 
     // Aggregate outputs for AI analysis
     results.aggregated_output += `\n=== ${step.description} ===\n${result.output.substring(0, 1000)}\n`;
+    
+    // Add delay between steps if stealth mode is enabled
+    if (options.stealth && step !== playbook.steps[playbook.steps.length - 1]) {
+      const delay = options.delay || 5000; // Default 5 seconds
+      console.log(`Stealth mode: waiting ${delay}ms before next step`);
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
   }
 
   // AI Analysis if enabled

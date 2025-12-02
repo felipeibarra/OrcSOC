@@ -6,11 +6,27 @@ const fs = require('fs');
 const path = require('path');
 const Queue = require('bull');
 const Joi = require('joi');
+const axios = require('axios');
+const puppeteer = require('puppeteer');
+const { createClient } = require('redis');
+
 const { runPlaybook, getPlaybooks } = require('./playbook-engine');
+const PluginManager = require('./plugins');
 
 const app = express();
 const server = http.createServer(app);
 const io = socketIo(server);
+
+// Initialize plugin manager
+const pluginManager = new PluginManager();
+
+// Redis client for history
+const redisClient = createClient({
+  host: 'orcsoc-redis',
+  port: 6379
+});
+
+redisClient.on('error', (err) => console.log('Redis Client Error', err));
 
 // Job Queue con Redis
 const jobQueue = new Queue('orcsoc-jobs', {
@@ -218,13 +234,14 @@ const COMMAND_TEMPLATES = {
     description: 'Análisis de puertos y servicios',
     options: [
       {
-        id: 'nmap-rapido',
-        name: 'Nmap Rápido (Top 100)',
+        id: 'nmap-rapido-stealth',
+        name: 'Nmap Sigiloso (Top 100)',
         service: 'web-pentest',
-        command: 'nmap -sV -F {{target}}',
-        description: 'Escaneo de los 100 puertos más comunes con detección de versiones',
-        tiempo: '30-60s',
-        nivel: 'Básico'
+        command: 'nmap -sS -T2 --max-rate 50 -F {{target}}',
+        description: 'Escaneo sigiloso SYN scan limitado a 50 paquetes/seg',
+        tiempo: '1-2 min',
+        nivel: 'Básico',
+        stealth: true
       },
       {
         id: 'nmap-web',
@@ -421,6 +438,22 @@ jobQueue.process(async (job) => {
         });
         writeLogs(logs);
         
+        // Guardar en historial Redis
+        const historyEntry = {
+          id: jobId,
+          timestamp: new Date().toISOString(),
+          user,
+          service,
+          command,
+          result: result.substring(0, 10000),
+          duration,
+          success: !error,
+          target: extractTarget(command)
+        };
+        
+        redisClient.lPush('investigation_history', JSON.stringify(historyEntry));
+        redisClient.lTrim('investigation_history', 0, 99); // Mantener solo últimas 100
+        
         if (error) {
           io.emit('job:error', { jobId, error: stderr });
           reject(new Error(stderr));
@@ -432,6 +465,22 @@ jobQueue.process(async (job) => {
     );
   });
 });
+
+// Función para extraer target del comando
+function extractTarget(command) {
+  const patterns = [
+    /--domain\s+(\S+)/,
+    /-h\s+(\S+)/,
+    /nmap\s+.*?\s+(\S+)/,
+    /sqlmap\s+-u\s+(\S+)/
+  ];
+  
+  for (const pattern of patterns) {
+    const match = command.match(pattern);
+    if (match) return match[1];
+  }
+  return 'unknown';
+}
 
 // Endpoint mejorado para ejecutar comando con cola
 app.post('/exec/:service', auth, async (req, res) => {
@@ -576,48 +625,66 @@ app.post('/analyze', async (req, res) => {
   }
   
   const prompts = {
-    nmap: `Analiza este escaneo Nmap como experto en ciberseguridad:
-1. Resumen ejecutivo
-2. Puertos críticos y servicios expuestos  
-3. Nivel de severidad (CRÍTICO/ALTO/MEDIO/BAJO)
-4. Vector de ataque más probable
-5. Recomendaciones inmediatas
+    nmap: `Analiza este escaneo Nmap como experto en ciberseguridad. Proporciona:
+1. Resumen ejecutivo con severidad total
+2. Puertos críticos y servicios expuestos con CVSS estimado
+3. Nivel de severidad (CRÍTICO/ALTO/MEDIO/BAJO) con justificación
+4. Vector de ataque más probable y exploitabilidad
+5. Recomendaciones inmediatas priorizadas
+6. Score de riesgo del objetivo (1-10)
 
 Nmap Output:
 ${output.substring(0, 2000)}`,
     
-    subfinder: `Analiza estos subdominios como analista OSINT:
-1. Subdominios de alto interés
-2. Posibles vectores de ataque
+    subfinder: `Analiza estos subdominios como analista OSINT avanzado. Proporciona:
+1. Subdominios de alto interés con justificación
+2. Posibles vectores de ataque identificados
+3. Exposición de información sensible (admin panels, dev sites, etc.)
+4. Correlación entre subdominios para identificar patrones
+5. Priorización para investigación (alta/media/baja)
+6. Recomendaciones de enumeración adicional
+
+Subdominios encontrados:
+${output.substring(0, 2000)}`,
+    
+    harvester: `Analiza esta información OSINT como investigador de amenazas. Proporciona:
+1. Nivel de exposición de información (alto/medio/bajo)
+2. Datos sensibles encontrados con severidad
+3. Riesgo de ingeniería social cuantificado
+4. Posibles campañas de phishing identificadas
+5. Recomendaciones de protección específicas
+6. Indicadores de compromiso (IoCs) detectados
+
+Resultados OSINT:
+${output.substring(0, 2000)}`,
+    
+    sqlmap: `Analiza estas vulnerabilidades SQL injection como pentester experto. Proporciona:
+1. Severidad y explotabilidad técnica (1-10)
+2. Datos en riesgo con impacto estimado
+3. Impacto en negocio cuantificado
+4. Pasos de remediación urgentes priorizados
+5. Vector de explotación más probable
+6. Recomendaciones de hardening
+
+SQLmap Results:
+${output.substring(0, 2000)}`,
+    
+    nikto: `Analiza este escaneo web como auditor de seguridad. Proporciona:
+1. Vulnerabilidades críticas identificadas
+2. Configuraciones inseguras detectadas
 3. Exposición de información sensible
-4. Priorización para investigación
-5. Recomendaciones
+4. Cumplimiento con OWASP Top 10
+5. Recomendaciones de mitigación priorizadas
 
-Subdominios:
+Nikto Scan Results:
 ${output.substring(0, 2000)}`,
     
-    harvester: `Analiza esta información OSINT:
-1. Nivel de exposición de información
-2. Datos sensibles encontrados
-3. Riesgo de ingeniería social
-4. Recomendaciones de protección
-
-Resultados:
-${output.substring(0, 2000)}`,
-    
-    sqlmap: `Analiza estas vulnerabilidades SQL:
-1. Severidad y explotabilidad
-2. Datos en riesgo
-3. Impacto en negocio
-4. Pasos de remediación urgentes
-
-SQLmap:
-${output.substring(0, 2000)}`,
-    
-    default: `Análisis de seguridad:
-1. Hallazgos clave
-2. Nivel de riesgo
-3. Recomendaciones
+    default: `Análisis de seguridad avanzado:
+1. Hallazgos críticos que requieren atención inmediata
+2. Nivel de riesgo general con justificación
+3. Vector de ataque más probable
+4. Recomendaciones priorizadas por impacto
+5. Score de riesgo (1-10) del objetivo
 
 Resultados:
 ${output.substring(0, 2000)}`
@@ -685,6 +752,295 @@ app.post('/playbook/run', auth, async (req, res) => {
   }
 });
 
+// Endpoint para obtener historial de investigaciones
+app.get('/history', auth, async (req, res) => {
+  try {
+    const history = await redisClient.lRange('investigation_history', 0, 49); // Últimas 50
+    const parsedHistory = history.map(entry => JSON.parse(entry));
+    
+    // Filtrar por usuario si no es admin
+    const filteredHistory = req.role !== 'admin' 
+      ? parsedHistory.filter(entry => entry.user === req.user)
+      : parsedHistory;
+    
+    res.json(filteredHistory);
+  } catch (error) {
+    res.status(500).json({ error: 'Error obteniendo historial: ' + error.message });
+  }
+});
+
+// Endpoint para re-ejecutar investigación del historial
+app.post('/history/replay/:id', auth, async (req, res) => {
+  try {
+    const history = await redisClient.lRange('investigation_history', 0, 99);
+    const entry = history.map(e => JSON.parse(e)).find(e => e.id === req.params.id);
+    
+    if (!entry) {
+      return res.status(404).json({ error: 'Investigación no encontrada' });
+    }
+    
+    if (req.role !== 'admin' && entry.user !== req.user) {
+      return res.status(403).json({ error: 'No autorizado' });
+    }
+    
+    // Re-ejecutar el comando
+    const job = await jobQueue.add({
+      service: entry.service,
+      command: entry.command,
+      user: req.user,
+      jobId: Date.now().toString()
+    });
+    
+    res.json({ 
+      jobId: job.data.jobId,
+      message: 'Re-ejecución iniciada',
+      originalTarget: entry.target
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Error re-ejecutando: ' + error.message });
+  }
+});
+
+// Endpoint para generar reporte PDF
+app.post('/report/pdf', auth, async (req, res) => {
+  const { target, results, analysis } = req.body;
+  
+  if (!target || !results) {
+    return res.status(400).json({ error: 'target y results requeridos' });
+  }
+  
+  try {
+    const browser = await puppeteer.launch({
+      args: ['--no-sandbox', '--disable-setuid-sandbox']
+    });
+    const page = await browser.newPage();
+    
+    const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Reporte de Seguridad - ${target}</title>
+        <style>
+            body { font-family: Arial, sans-serif; margin: 40px; }
+            .header { text-align: center; border-bottom: 2px solid #333; padding-bottom: 20px; }
+            .section { margin: 30px 0; }
+            .critical { color: red; }
+            .high { color: orange; }
+            .medium { color: yellow; }
+            .low { color: green; }
+            pre { background: #f5f5f5; padding: 10px; border-radius: 5px; }
+        </style>
+    </head>
+    <body>
+        <div class="header">
+            <h1>OrcSOC - Reporte de Seguridad</h1>
+            <h2>Objetivo: ${target}</h2>
+            <p>Fecha: ${new Date().toLocaleString()}</p>
+        </div>
+        
+        <div class="section">
+            <h3>Resultados de Escaneo</h3>
+            <pre>${results}</pre>
+        </div>
+        
+        ${analysis ? `
+        <div class="section">
+            <h3>Análisis de Inteligencia Artificial</h3>
+            <pre>${analysis}</pre>
+        </div>
+        ` : ''}
+        
+        <div class="section">
+            <h3>Recomendaciones Generales</h3>
+            <ul>
+                <li>Revisar configuraciones de seguridad</li>
+                <li>Actualizar software vulnerable</li>
+                <li>Implementar monitoreo continuo</li>
+                <li>Realizar pruebas de penetración regulares</li>
+            </ul>
+        </div>
+    </body>
+    </html>`;
+    
+    await page.setContent(html);
+    const pdf = await page.pdf({ format: 'A4' });
+    
+    await browser.close();
+    
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename=reporte-${target}-${Date.now()}.pdf`);
+    res.send(pdf);
+  } catch (error) {
+    res.status(500).json({ error: 'Error generando PDF: ' + error.message });
+  }
+});
+
+// Endpoint para consultar APIs externas
+app.get('/api/external/:service/:target', auth, async (req, res) => {
+  const { service, target } = req.params;
+  const apiKeys = {
+    shodan: process.env.SHODAN_API_KEY,
+    censys: process.env.CENSYS_API_KEY,
+    haveibeenpwned: process.env.HIBP_API_KEY,
+    virustotal: process.env.VIRUSTOTAL_API_KEY
+  };
+  
+  try {
+    let result = {};
+    
+    switch (service) {
+      case 'shodan':
+        if (!apiKeys.shodan) return res.status(400).json({ error: 'Shodan API key no configurada' });
+        const shodanResponse = await axios.get(`https://api.shodan.io/shodan/host/${target}?key=${apiKeys.shodan}`);
+        result = shodanResponse.data;
+        break;
+        
+      case 'censys':
+        if (!apiKeys.censys) return res.status(400).json({ error: 'Censys API keys no configuradas' });
+        const censysResponse = await axios.get(`https://search.censys.io/api/v2/hosts/${target}`, {
+          auth: {
+            username: apiKeys.censys.split(':')[0],
+            password: apiKeys.censys.split(':')[1]
+          }
+        });
+        result = censysResponse.data;
+        break;
+        
+      case 'haveibeenpwned':
+        if (!apiKeys.haveibeenpwned) return res.status(400).json({ error: 'HIBP API key no configurada' });
+        const hibpResponse = await axios.get(`https://haveibeenpwned.com/api/v3/breachedaccount/${target}`, {
+          headers: { 'hibp-api-key': apiKeys.haveibeenpwned }
+        });
+        result = hibpResponse.data;
+        break;
+        
+      case 'virustotal':
+        if (!apiKeys.virustotal) return res.status(400).json({ error: 'VirusTotal API key no configurada' });
+        const vtResponse = await axios.get(`https://www.virustotal.com/api/v3/domains/${target}`, {
+          headers: { 'x-apikey': apiKeys.virustotal }
+        });
+        result = vtResponse.data;
+        break;
+        
+      default:
+        return res.status(400).json({ error: 'Servicio no soportado' });
+    }
+    
+    // Guardar en logs
+    const logs = readLogs();
+    logs.push({
+      timestamp: new Date().toISOString(),
+      user: req.user,
+      service: 'External-API',
+      command: `${service}:${target}`,
+      result: JSON.stringify(result).substring(0, 2000)
+    });
+    writeLogs(logs);
+    
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ error: 'Error consultando API externa: ' + error.message });
+  }
+});
+
+// Endpoint para obtener métricas de dashboard
+app.get('/dashboard/metrics', auth, async (req, res) => {
+  try {
+    const history = await redisClient.lRange('investigation_history', 0, 999);
+    const investigations = history.map(entry => JSON.parse(entry));
+    
+    // Filtrar por usuario si no es admin
+    const userInvestigations = req.role !== 'admin' 
+      ? investigations.filter(entry => entry.user === req.user)
+      : investigations;
+    
+    // Calcular métricas
+    const metrics = {
+      total_investigations: userInvestigations.length,
+      successful_scans: userInvestigations.filter(i => i.success).length,
+      failed_scans: userInvestigations.filter(i => !i.success).length,
+      avg_duration: userInvestigations.reduce((sum, i) => sum + i.duration, 0) / userInvestigations.length || 0,
+      targets_scanned: [...new Set(userInvestigations.map(i => i.target))].length,
+      recent_activity: userInvestigations.slice(0, 10),
+      severity_distribution: {
+        critical: userInvestigations.filter(i => i.result.toLowerCase().includes('critical')).length,
+        high: userInvestigations.filter(i => i.result.toLowerCase().includes('high')).length,
+        medium: userInvestigations.filter(i => i.result.toLowerCase().includes('medium')).length,
+        low: userInvestigations.filter(i => i.result.toLowerCase().includes('low')).length
+      },
+      service_usage: userInvestigations.reduce((acc, i) => {
+        acc[i.service] = (acc[i.service] || 0) + 1;
+        return acc;
+      }, {})
+    };
+    
+    res.json(metrics);
+  } catch (error) {
+    res.status(500).json({ error: 'Error obteniendo métricas: ' + error.message });
+  }
+});
+
+// Endpoints de plugins
+app.get('/plugins', auth, (req, res) => {
+  try {
+    const plugins = pluginManager.getAllPlugins();
+    res.json(plugins.map(p => ({
+      name: p.name,
+      version: p.version,
+      description: p.description,
+      capabilities: p.capabilities
+    })));
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/plugins/execute', auth, async (req, res) => {
+  const { plugin_name, target, options } = req.body;
+  
+  if (!plugin_name || !target) {
+    return res.status(400).json({ error: 'plugin_name y target requeridos' });
+  }
+  
+  try {
+    const result = await pluginManager.executePlugin(plugin_name, target, options);
+    
+    // Guardar en logs
+    const logs = readLogs();
+    logs.push({
+      timestamp: new Date().toISOString(),
+      user: req.user,
+      service: 'Plugin',
+      command: `plugin:${plugin_name}:${target}`,
+      result: JSON.stringify(result).substring(0, 2000)
+    });
+    writeLogs(logs);
+    
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ error: 'Error ejecutando plugin: ' + error.message });
+  }
+});
+
+app.post('/plugins/create', auth, (req, res) => {
+  const { name, description } = req.body;
+  
+  if (!name || !description) {
+    return res.status(400).json({ error: 'name y description requeridos' });
+  }
+  
+  if (req.role !== 'admin') {
+    return res.status(403).json({ error: 'Solo administradores pueden crear plugins' });
+  }
+  
+  try {
+    const filepath = pluginManager.createPluginTemplate(name, description);
+    res.json({ message: 'Plugin template creado', filepath });
+  } catch (error) {
+    res.status(500).json({ error: 'Error creando plugin: ' + error.message });
+  }
+});
+
 // WebSocket para actualizaciones en tiempo real
 io.on('connection', (socket) => {
   console.log('Cliente conectado:', socket.id);
@@ -699,8 +1055,12 @@ io.on('connection', (socket) => {
 });
 
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, '0.0.0.0', () => {
-  console.log(`OrcSOC Ops Center (Enhanced) running on port ${PORT}`);
+server.listen(PORT, '0.0.0.0', async () => {
+  console.log(`OrcSOC Ops Center (Enterprise) running on port ${PORT}`);
   console.log(`WebSocket enabled for real-time updates`);
   console.log(`Job Queue connected to Redis`);
+  
+  // Load plugins
+  await pluginManager.loadPlugins();
+  console.log(`Loaded ${pluginManager.getAllPlugins().length} plugins`);
 });

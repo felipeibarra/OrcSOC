@@ -76,6 +76,44 @@
         }
       ],
       "ai_analysis": true
+    },
+    {
+      "id": "full-pipeline",
+      "name": "Full Security Pipeline",
+      "description": "Complete security assessment: OSINT → Recon → Ports → Vulnerabilities",
+      "steps": [
+        {
+          "service": "osint-tools",
+          "command": "python tools/enrich.py --target {{target}} --type domain --level basic",
+          "description": "OSINT: Basic domain enrichment (WHOIS, DNS)"
+        },
+        {
+          "service": "osint-tools",
+          "command": "python tools/subfinder_wrapper.py --domain {{target}}",
+          "description": "Recon: Enumerate subdomains with Subfinder"
+        },
+        {
+          "service": "osint-tools",
+          "command": "python tools/harvester_wrapper.py --domain {{target}} --sources google,bing",
+          "description": "OSINT: Harvest emails and additional info"
+        },
+        {
+          "service": "web-pentest",
+          "command": "nmap -sV -F {{target}}",
+          "description": "Ports: Quick port scan (top 100 ports)"
+        },
+        {
+          "service": "web-pentest",
+          "command": "nikto -h http://{{target}} -Tuning 9",
+          "description": "Vulns: Web vulnerability scan with Nikto"
+        },
+        {
+          "service": "web-pentest",
+          "command": "sqlmap -u http://{{target}} --batch --level=1 --risk=1",
+          "description": "Vulns: Basic SQL injection testing"
+        }
+      ],
+      "ai_analysis": true
     }
   ]
 }
