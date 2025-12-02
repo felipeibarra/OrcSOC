@@ -1,134 +1,357 @@
+<div align="center">
 
-# OrcSOC: Plataforma Integral para Operaciones de Seguridad Ofensiva y OSINT
+# 🛡️ OrcSOC Enterprise
 
-OrcSOC es una solución modular y escalable para profesionales de ciberseguridad, pentesters y equipos SOC que buscan centralizar, automatizar y potenciar sus operaciones ofensivas y de inteligencia de amenazas (OSINT/CTI) en un entorno seguro y controlado.
+**The Ultimate Cybersecurity Operations Platform**
 
-## Beneficios Clave
-- **Centralización total:** Accede a todas tus herramientas desde un único dashboard web.
-- **Automatización y eficiencia:** Orquesta flujos de trabajo ofensivos y de inteligencia con IA y scripts avanzados.
-- **Escalabilidad:** Añade o elimina módulos según tus necesidades (OSINT, pentesting, CTI, wireless, IA, etc.).
-- **Seguridad y control:** Cada componente corre en contenedores aislados, minimizando riesgos y facilitando auditoría.
-- **Listo para laboratorio, consultoría o producto comercial.**
+*Centralize • Automate • Analyze • Secure*
 
-## Casos de Uso
-- SOCs y MSSPs que requieren un entorno ofensivo seguro y centralizado.
-- Pentesters y Red Teams que buscan automatizar tareas y reportes.
-- Investigadores OSINT/CTI que necesitan correlación avanzada y visualización.
-- Formación y simulación en ciberseguridad ofensiva.
+[![Docker](https://img.shields.io/badge/docker-%230db7ed.svg?style=for-the-badge&logo=docker&logoColor=white)](https://docker.com)
+[![Node.js](https://img.shields.io/badge/node.js-6DA55F?style=for-the-badge&logo=node.js&logoColor=white)](https://nodejs.org)
+[![Python](https://img.shields.io/badge/python-3670A0?style=for-the-badge&logo=python&logoColor=ffdd54)](https://python.org)
+[![Redis](https://img.shields.io/badge/redis-%23DD0031.svg?style=for-the-badge&logo=redis&logoColor=white)](https://redis.io)
+[![License](https://img.shields.io/badge/License-MIT-green.svg?style=for-the-badge)](./docs/LICENSE)
 
-## Características Principales
-- Dashboard web centralizado (ej. Dashy, Homer, panel propio).
-- Integración de herramientas OSINT, CTI, pentesting web, wireless, IA ofensiva, etc.
-- Orquestación vía Docker Compose: cada grupo de herramientas en su propio contenedor.
-- Acceso a terminales web para ejecutar scripts de forma segura.
-- Ejemplo de servicios integrables: MISP, OpenCTI, UrlChecker, HBSQLI, Kismet, KawaiiGPT, Drana-Infinity, DeepEye, entre otros.
-
-## Guía Rápida de Uso
-1. Clona el repositorio:
-   ```bash
-   git clone https://github.com/felipeibarra/OrcSOC.git
-   cd OrcSOC
-   ```
-2. Ejecuta el script de instalación:
-   ```bash
-   ./install.sh
-   ```
-3. Accede al dashboard web en [http://localhost:3000](http://localhost:3000) (usuario: admin, password: password).
-4. Usa la interfaz para orquestar comandos en los microservicios.
-
-## Dashboard y Capacidades
-El dashboard central es la interfaz principal para interactuar con OrcSOC. Incluye:
-- **Ejecución de Comandos:** Envía comandos a microservicios como osint-tools, web-pentest, wireless-lab y ai-offsec.
-- **Resultados en Tiempo Real:** Visualiza salidas de comandos directamente en la web.
-- **Logs Históricos con Filtros y Exportación:** Accede a historial con filtros; exporta logs en JSON.
-- **Gestión de Usuarios con Roles:** Autenticación básica con roles (admin: acceso total, user: acceso limitado).
-- **Notificaciones:** Alertas para éxito/error en ejecuciones.
-- **Asistente IA con Ollama:** Chat interactivo y análisis automático de logs para proponer mejoras en procesos en tiempo real.
-- **Alertas Automáticas:** Genera alertas basadas en logs usando IA para detectar anomalías.
-- **Integración con Herramientas Externas:** Envía datos a APIs externas (ej. webhooks).
-- **Información Integrada:** Sección de ayuda con descripciones de servicios y ejemplos de uso.
-- **Seguridad:** Autenticación básica; comandos en contenedores aislados.
-- **Microservicios:**
-  - **osint-tools:** OSINT (ej. scraping, dominios).
-  - **web-pentest:** Pentesting web (SQLi, XSS).
-  - **wireless-lab:** Wireless (kismet, modo host).
-  - **ai-offsec:** IA ofensiva (payloads, análisis).
-
-Para casos de uso detallados, consulta `ARQUITECTURA_CASOS_USO.txt`.
-
-## Estructura Modular (Ejemplo)
-```yaml
-version: "3.9"
-services:
-  ops-center:
-    image: lissy93/dashy
-    container_name: ops-center
-    ports:
-      - "8080:80"
-    depends_on:
-      - osint-tools
-      - web-pentest
-      - cti-misp
-      - cti-opencti
-    networks:
-      - socnet
-  osint-tools:
-    build: ./docker/osint-tools
-    container_name: osint-tools
-    networks:
-      - socnet
-  web-pentest:
-    build: ./docker/web-pentest
-    container_name: web-pentest
-    networks:
-      - socnet
-  wireless-lab:
-    build: ./docker/wireless-lab
-    container_name: wireless-lab
-    network_mode: host
-    cap_add:
-      - NET_ADMIN
-      - NET_RAW
-  cti-misp:
-    image: misp/misp:latest
-    container_name: misp
-    networks:
-      - socnet
-  cti-opencti:
-    image: opencti/platform:latest
-    container_name: opencti
-    networks:
-      - socnet
-  ai-offsec-kawaii:
-    build: ./docker/kawaiigpt
-    container_name: kawaii-gpt
-    networks:
-      - socnet
-  ai-offsec-drana:
-    build: ./docker/drana-infinity
-    container_name: drana
-    networks:
-      - socnet
-networks:
-  socnet:
-    driver: bridge
-```
-
-## Personalización y Escalabilidad
-- Añade tus propias herramientas y scripts en los Dockerfile de cada módulo.
-- Integra paneles, terminales web y APIs según tus necesidades.
-- Cumple con requisitos legales y de licenciamiento en cada componente.
-
-## Soporte y Comercialización
-¿Quieres OrcSOC como producto llave en mano, consultoría, integración personalizada o soporte?
-
-**Contáctanos:**
-- Email: [tu-email@dominio.com]
-- LinkedIn: [linkedin.com/in/felipeibarra]
-- Web: [orcsoc.com] (próximamente)
-
-Solicita una demo, cotización o integración a medida para tu empresa o equipo.
+[📖 Documentation](./docs/) • [🚀 Quick Start](#-quick-start) • [🔧 Installation](#-installation) • [📊 Dashboard](#-dashboard-features)
 
 ---
 
-© 2025 Felipe Ibarra. Producto en desarrollo. Para uso legal y ético únicamente.
+## 🌟 What is OrcSOC?
+
+OrcSOC Enterprise is a **comprehensive, modular cybersecurity platform** designed for SOC teams, pentesters, red teamers, and security researchers. It provides a unified interface to orchestrate complex security operations, from reconnaissance to exploitation, all within secure, isolated containers.
+
+### 🎯 Key Benefits
+
+- **🔒 Enterprise-Grade Security**: Every tool runs in isolated Docker containers
+- **⚡ Full Automation**: Complete security pipelines with AI-powered analysis
+- **📊 SOC Dashboard**: Real-time monitoring and threat intelligence
+- **🔌 Plugin Architecture**: Extensible system for custom tools and integrations
+- **🌐 External APIs**: Seamless integration with Shodan, VirusTotal, Censys, and more
+- **📈 Advanced Analytics**: Risk scoring, correlation, and predictive insights
+
+---
+
+## 🏗️ Architecture
+
+```mermaid
+graph TB
+    A[Web Dashboard] --> B[Ops Center API]
+    B --> C[Plugin Manager]
+    B --> D[Playbook Engine]
+    B --> E[History Store]
+
+    C --> F[Custom Plugins]
+    D --> G[Docker Services]
+    E --> H[Redis Cache]
+
+    G --> I[OSINT Tools]
+    G --> J[Web Pentest]
+    G --> K[Wireless Lab]
+    G --> L[AI OffSec]
+
+    subgraph "External Integrations"
+        M[Shodan API]
+        N[VirusTotal API]
+        O[Censys API]
+        P[HaveIBeenPwned]
+    end
+
+    B --> M
+    B --> N
+    B --> O
+    B --> P
+```
+
+### 🐳 Microservices Architecture
+
+| Service | Purpose | Technologies |
+|---------|---------|--------------|
+| **Ops Center** | Main web interface & API | Node.js, Express, Socket.IO |
+| **OSINT Tools** | Intelligence gathering | Python, Subfinder, Amass, theHarvester |
+| **Web Pentest** | Web application testing | Nmap, Nikto, SQLMap, WPScan |
+| **Wireless Lab** | Wireless security testing | Kismet, Aircrack-ng |
+| **AI OffSec** | AI-powered analysis | Ollama, Llama3.2 |
+| **Redis** | Caching & job queues | Redis |
+
+---
+
+## 🚀 Quick Start
+
+### Prerequisites
+- **Docker & Docker Compose**
+- **8GB+ RAM** (16GB recommended)
+- **20GB+ free disk space**
+- **Linux/macOS** (Windows via WSL2)
+
+### One-Command Installation
+
+```bash
+# Clone the repository
+git clone https://github.com/felipeibarra/OrcSOC.git
+cd OrcSOC
+
+# Run complete installation
+./install.sh
+```
+
+That's it! 🎉 OrcSOC will be running at **http://localhost:3000**
+
+---
+
+## 📊 Dashboard Features
+
+### 🎛️ SOC Operations Center
+- **Real-time Monitoring**: Live progress indicators and status updates
+- **Threat Intelligence**: Integrated feeds and correlation engine
+- **Risk Assessment**: Automated scoring and prioritization
+- **Investigation History**: Persistent storage with replay functionality
+
+### 🔍 Security Operations
+
+#### Full Pipeline Automation
+Execute complete security assessments with a single click:
+1. **OSINT** → Domain enumeration & intelligence gathering
+2. **Recon** → Subdomain discovery & DNS analysis
+3. **Ports** → Service detection & version fingerprinting
+4. **Vulns** → Vulnerability scanning & exploitation testing
+
+#### Advanced Playbooks
+```json
+{
+  "full-pipeline": {
+    "description": "Complete security assessment",
+    "steps": [
+      {"service": "osint-tools", "command": "enrich domain"},
+      {"service": "osint-tools", "command": "enumerate subdomains"},
+      {"service": "web-pentest", "command": "port scan"},
+      {"service": "web-pentest", "command": "vulnerability scan"}
+    ]
+  }
+}
+```
+
+### 🤖 AI-Powered Analysis
+- **Intelligent Correlation**: Connect findings across multiple sources
+- **Risk Prioritization**: ML-based threat scoring
+- **Automated Reporting**: Generate comprehensive security reports
+- **Predictive Insights**: Identify potential attack vectors
+
+### 📈 Analytics & Visualization
+
+#### Interactive Charts
+- Port distribution analysis
+- Vulnerability severity trends
+- OSINT relationship mapping
+- Risk score distributions
+
+#### Real-time Dashboards
+- Current investigation status
+- System resource monitoring
+- Threat intelligence feeds
+- Performance metrics
+
+---
+
+## 🔧 Installation
+
+### Complete Setup
+```bash
+# Automated installation (recommended)
+./install.sh
+
+# Manual installation
+docker-compose up --build -d
+```
+
+### Configuration
+Create a `.env` file for API keys and customization:
+
+```bash
+# External API Keys (enhance functionality)
+SHODAN_API_KEY=your_shodan_key
+VIRUSTOTAL_API_KEY=your_vt_key
+CENSYS_API_ID=your_censys_id
+CENSYS_API_SECRET=your_censys_secret
+
+# AI Configuration
+OLLAMA_MODEL=llama3.2
+
+# Security Settings
+STEALTH_MODE=true
+STEALTH_DELAY=5000
+```
+
+### Helper Scripts
+```bash
+./start.sh      # Start OrcSOC
+./stop.sh       # Stop OrcSOC
+./restart.sh    # Restart services
+./logs.sh <service>  # View service logs
+./update.sh     # Update to latest version
+./cleanup.sh    # Complete removal
+```
+
+---
+
+## 🔌 Plugin System
+
+### Extend OrcSOC with Custom Tools
+
+```javascript
+// Example plugin: advanced-subdomain-enum.js
+module.exports = {
+  name: 'advanced-subdomain-enum',
+  version: '1.0.0',
+  description: 'Multi-source subdomain enumeration',
+  capabilities: ['recon'],
+
+  async execute(target, options = {}) {
+    // Your custom logic here
+    return {
+      target,
+      findings: [...],
+      risk_score: 7,
+      metadata: {...}
+    };
+  }
+};
+```
+
+### Plugin Capabilities
+- 🔍 **Recon**: Information gathering and enumeration
+- 🧠 **Analysis**: Data correlation and intelligence
+- 📋 **Reporting**: Custom report generation
+- 🌐 **Integration**: External API connections
+
+---
+
+## 🌐 External Integrations
+
+### Threat Intelligence APIs
+- **Shodan**: IoT device discovery and service enumeration
+- **VirusTotal**: Malware analysis and URL scanning
+- **Censys**: Certificate and infrastructure intelligence
+- **HaveIBeenPwned**: Data breach verification
+
+### Webhook Support
+Send results to external systems:
+```javascript
+// Automatic webhook notifications
+{
+  "event": "scan_complete",
+  "target": "example.com",
+  "findings": [...],
+  "risk_score": 8
+}
+```
+
+---
+
+## 📚 Documentation
+
+Comprehensive documentation is available in the [`./docs/`](./docs/) directory:
+
+- [📖 **User Guide**](./docs/GUIA_USO_DASHBOARD.md) - Complete usage instructions
+- [🔧 **API Reference**](./docs/ENDPOINTS.md) - REST API documentation
+- [⚙️ **Configuration**](./docs/INFRAESTRUCTURA.md) - System configuration
+- [🔌 **Plugin Development**](./docs/PLUGIN_DEVELOPMENT_GUIDE.md) - Create custom plugins
+- [🚨 **Troubleshooting**](./docs/TROUBLESHOOTING.md) - Common issues and solutions
+- [📋 **Test Plan**](./docs/TEST_PLAN.md) - Testing procedures
+
+---
+
+## 🎯 Use Cases
+
+### 🔴 Red Team Operations
+- Automated reconnaissance campaigns
+- Vulnerability chaining and exploitation
+- Command & control infrastructure setup
+- Anti-forensic testing
+
+### 🛡️ SOC & Incident Response
+- Threat hunting automation
+- Indicator correlation
+- Automated alerting and escalation
+- Forensic data collection
+
+### 🔍 Security Research
+- OSINT investigations
+- Vulnerability research
+- Threat intelligence gathering
+- Academic security studies
+
+### 🏢 Enterprise Security
+- Continuous security assessments
+- Compliance monitoring
+- Risk management
+- Security training environments
+
+---
+
+## 🔒 Security Features
+
+### Container Isolation
+- Every tool runs in its own container
+- Network segmentation between services
+- Resource limits and security profiles
+
+### Stealth Operations
+- Configurable delays between operations
+- Randomized user agents and timing
+- Proxy support for external communications
+
+### Audit & Compliance
+- Complete command logging
+- User activity tracking
+- Exportable audit trails
+- GDPR-compliant data handling
+
+---
+
+## 🤝 Contributing
+
+We welcome contributions! Please see our [Contributing Guide](./docs/CONTRIBUTING.md) for details.
+
+### Development Setup
+```bash
+# Clone and setup
+git clone https://github.com/felipeibarra/OrcSOC.git
+cd OrcSOC
+
+# Install development dependencies
+npm install
+
+# Start development environment
+docker-compose -f docker-compose.dev.yml up
+```
+
+### Plugin Development
+Create custom security tools and share them with the community!
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](./docs/LICENSE) file for details.
+
+---
+
+## 🙏 Acknowledgments
+
+- **Security Community**: For the amazing open-source tools
+- **Docker Community**: For containerization excellence
+- **AI Research**: For advancing cybersecurity automation
+
+---
+
+<div align="center">
+
+**Ready to revolutionize your cybersecurity operations?**
+
+[🚀 **Get Started**](#-quick-start) • [📖 **Documentation**](./docs/) • [🐛 **Report Issues**](https://github.com/felipeibarra/OrcSOC/issues)
+
+---
+
+*Built with ❤️ for the cybersecurity community*
+
+</div>
