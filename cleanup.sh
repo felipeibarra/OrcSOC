@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # =============================================================================
-# OrcSOC Cleanup Script
+# 🛡️ OrcSOC - Cleanup Script
 # Limpieza profunda de contenedores, volúmenes, imágenes y cache de Docker
 # =============================================================================
 
@@ -21,10 +21,10 @@ echo -e "${CYAN}"
 cat << "EOF"
    ___           ____  ____  ______
   / _ \ _____ __/ __/ / __ \/ ___/
- / // // ___// /\  \/ /_/ / /__  
+ / // // ___// /\  \/ /_/ / /__/  
 /____//_/   /___//\____/\___/     
                                   
-  Cleanup Script v1.0
+  OrcSOC Cleanup Script v1.0
 EOF
 echo -e "${NC}"
 
